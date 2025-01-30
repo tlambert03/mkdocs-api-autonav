@@ -28,6 +28,9 @@ plugins:
     modules: ['src/my_library']
 ```
 
+> [!IMPORTANT]
+> This plugin depends on `mkdocs>=1.6` (*Released: Apr 20, 2024*)
+
 ### Configuration
 
 Here are all the configurables, along with their default values.
