@@ -33,23 +33,27 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = ["mkdocs>=1.6.1", "mkdocstrings-python>=1.13.0"]
 
-# https://peps.python.org/pep-0621/#dependencies-optional-dependencies
-[project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
-dev = [
-    "ipython",
-    "mypy",
-    "pdbpp",  # https://github.com/pdbpp/pdbpp
-    "pre-commit",
-    "rich",  # https://github.com/Textualize/rich
-    "ruff",
-]
+[project.entry-points."mkdocs.plugins"]
+mkdocs-api-autonav = "mkdocs_api_autonav.plugin:AutoAPIPlugin"
 
 [project.urls]
 homepage = "https://github.com/tlambert03/mkdocs-api-autonav"
 repository = "https://github.com/tlambert03/mkdocs-api-autonav"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ipython",
+    "mypy",
+    "pdbpp",
+    "pre-commit",
+    "rich",
+    "ruff",
+    "pytest>=8.3.4",
+]
 
 # https://docs.astral.sh/ruff
 [tool.ruff]
@@ -72,7 +76,7 @@ select = [
     "B",    # flake8-bugbear
     "A001", # flake8-builtins
     "RUF",  # ruff-specific rules
-    "TCH",  # flake8-type-checking
+    "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
 ]
 ignore = [
@@ -85,7 +89,7 @@ ignore = [
 # https://docs.astral.sh/ruff/formatter/
 [tool.ruff.format]
 docstring-code-format = true
-skip-magic-trailing-comma = false  # default is false
+skip-magic-trailing-comma = false # default is false
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
@@ -119,8 +123,4 @@ exclude_lines = [
 source = ["mkdocs_api_autonav"]
 
 [tool.check-manifest]
-ignore = [
-    ".pre-commit-config.yaml",
-    ".ruff_cache/**/*",
-    "tests/**/*",
-]
+ignore = [".pre-commit-config.yaml", ".ruff_cache/**/*", "tests/**/*"]

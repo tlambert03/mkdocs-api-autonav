@@ -7,3 +7,17 @@
 [![codecov](https://codecov.io/gh/tlambert03/mkdocs-api-autonav/branch/main/graph/badge.svg)](https://codecov.io/gh/tlambert03/mkdocs-api-autonav)
 
 Autogenerate API docs with mkdocstrings, including nav
+
+
+## Quick Start
+
+```yaml
+site_name: "My Library"
+
+theme:
+  name: "material"
+
+plugins:
+- search
+- mkdocs-api-autonav
+```
