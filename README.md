@@ -144,7 +144,7 @@ documentation for my projects.
 > itself, created by [@pawamoy](https://github.com/pawamoy)
 
 This requires copying the same script and configuring three different plugins.
-All I _really_ want to do, is point to the top level module(s) in my project,
+All I _really_ want to do is point to the top level module(s) in my project
 and have the API documentation generated for all submodules, with navigation
 matching the module structure.
 
