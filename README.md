@@ -103,7 +103,8 @@ documentation for my projects.
   `mkdocs-gen-files` and generate a navigation structure that mirrors the module
   structure.
 
-> [!NOTE] This pattern was mostly borrowed/inspired by the documentation for
+> [!NOTE]
+> This pattern was mostly borrowed/inspired by the documentation for
 > [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings/blob/main/scripts/gen_ref_nav.py)
 > itself, created by [@pawamoy](https://github.com/pawamoy)
 
