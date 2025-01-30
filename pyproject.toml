@@ -27,7 +27,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = ["mkdocs", "mkdocstrings-python"]
+dependencies = [
+    "mkdocs>=1.6",
+    "mkdocstrings-python",
+]
 
 [project.entry-points."mkdocs.plugins"]
 api-autonav = "mkdocs_api_autonav.plugin:AutoAPIPlugin"
