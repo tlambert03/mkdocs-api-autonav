@@ -11,6 +11,12 @@ Autogenerate API reference including navigation for all submodules, with
 
 ## Quick Start
 
+_Until this is published on PyPI, please install directly from GitHub._
+
+```shell
+pip install git+https://github.com/tlambert03/mkdocs-api-autonav
+```
+
 ```yaml
 site_name: "My Library"
 
@@ -25,6 +31,16 @@ plugins:
 
 Here are all the configurables, along with their default values.
 
+```yaml
+plugins:
+- api-autonav:
+    modules: []  
+    api_title: "API Reference"
+    api_root: "reference" 
+    nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
+    exclude_private: true  
+```
+
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
   navigation, relative to the project root.  This is the only required
   configuration.
@@ -36,16 +52,6 @@ Here are all the configurables, along with their default values.
   navigation.  By default, renders a `[mod]` badge before each module.
   Set to the empty string to disable this.
 - **`exclude_private`** (`bool`) - Exclude modules that start with an underscore
-
-```yaml
-plugins:
-- api-autonav:
-    modules: []  
-    api_title: "API Reference"
-    api_root: "reference" 
-    nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
-    exclude_private: true  
-```
 
 ### Integration with nav
 
