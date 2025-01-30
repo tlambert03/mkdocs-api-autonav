@@ -18,6 +18,7 @@ pip install git+https://github.com/tlambert03/mkdocs-api-autonav
 ```
 
 ```yaml
+# mkdocs.yml
 site_name: "My Library"
 
 plugins:
