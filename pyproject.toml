@@ -27,10 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = [
-    "mkdocs>=1.6",
-    "mkdocstrings-python",
-]
+dependencies = ["mkdocs>=1.6", "mkdocstrings-python"]
 
 [project.entry-points."mkdocs.plugins"]
 api-autonav = "mkdocs_api_autonav.plugin:AutoAPIPlugin"
@@ -50,6 +47,7 @@ dev = [
     "rich",
     "ruff",
     "pytest>=8",
+    "pyright>=1.1.393",
 ]
 
 # https://docs.astral.sh/ruff
@@ -119,5 +117,7 @@ exclude_lines = [
 [tool.coverage.run]
 source = ["mkdocs_api_autonav"]
 
-[tool.check-manifest]
-ignore = [".pre-commit-config.yaml", ".ruff_cache/**/*", "tests/**/*"]
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.9"
+venv = ".venv"
