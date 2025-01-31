@@ -35,10 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv run pytest
+      - run: uv run pytest --color yes -v --cov
         env:
           UV_RESOLUTION: ${{ matrix.resolution }}
           UV_PYTHON: ${{ matrix.python-version }}
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   deploy:
     name: Deploy
