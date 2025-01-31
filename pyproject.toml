@@ -27,7 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = ["mkdocs>=1.6", "mkdocstrings-python"]
+dependencies = ["mkdocs>=1.6", "mkdocstrings-python>=1.11.0"]
 
 [project.entry-points."mkdocs.plugins"]
 api-autonav = "mkdocs_api_autonav.plugin:AutoAPIPlugin"
@@ -38,16 +38,14 @@ repository = "https://github.com/tlambert03/mkdocs-api-autonav"
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "pytest-cov",
-    "ipython",
-    "mypy",
-    "pdbpp",
-    "pre-commit",
-    "rich",
-    "ruff",
-    "pytest>=8",
+    "ipython>=8.18.1",
+    "mypy>=1.14.1",
+    "pre-commit>=4.1.0",
     "pyright>=1.1.393",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "rich>=13.9.4",
+    "ruff>=0.9.3",
 ]
 
 # https://docs.astral.sh/ruff
