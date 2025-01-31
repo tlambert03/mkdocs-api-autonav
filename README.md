@@ -39,8 +39,8 @@ Here are all the configurables, along with their default values.
 plugins:
 - api-autonav:
     modules: []  
-    api_title: "API Reference"
-    api_root: "reference" 
+    nav_section_title: "API Reference"
+    api_root_uri: "reference" 
     nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
     exclude_private: true  
 ```
@@ -48,9 +48,9 @@ plugins:
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
   navigation, relative to the project root.  This is the only required
   configuration.
-- **`api_title`** (`str`) - Title for the API reference section as it appears in
+- **`nav_section_title`** (`str`) - Title for the API reference section as it appears in
   the navigation. Default is "API Reference"
-- **`api_root`** (`str`) - Root folder for api docs in the generated site. This
+- **`api_root_uri`** (`str`) - Root folder for api docs in the generated site. This
   determines the url path for the API documentation. Default is "reference"
 - **`nav_item_prefix`** (`str`) - A prefix to add to each module name in the
   navigation.  By default, renders a `[mod]` badge before each module.
@@ -63,32 +63,32 @@ No `nav` configuration is required in `mkdocs.yml`, but in most cases you will w
 have one anyway.  Here are the rules for how this plugin integrates with your
 existing `nav` configuration.
 
-1. **If `<api_title>` exists and is explicitly referenced as a string**
+1. **If `<nav_section_title>` exists and is explicitly referenced as a string**
 
-    If your nav contains a string entry matching the `api-autonav.api_title`
+    If your nav contains a string entry matching the `api-autonav.nav_section_title`
     (e.g., - `"API Reference"`), the plugin replaces it with a structured
     navigation dictionary containing the generated API documentation.  This
     can be used to reposition the API section in the navigation.
 
-1. **If `<api_title>` exists as a dictionary with a single string value**
+1. **If `<nav_section_title>` exists as a dictionary with a single string value**
 
-    If the API section is defined as `{ api-autonav.api_title: "some/path" }`
+    If the API section is defined as `{ api-autonav.nav_section_title: "some/path" }`
     (e.g., - `"API Reference": "reference/"`), the plugin verifies that
-    `"some/path"` matches the expected `api-autonav.api_root` directory where
+    `"some/path"` matches the expected `api-autonav.api_root_uri` directory where
     API documentation is generated. If it matches, the string is replaced with
     the structured API navigation. Otherwise, an error is logged, and no changes
     are made.  This can be used to reposition the API section in the navigation,
     and also to add additional items to the API section, for example, using
     `literate-nav` to autodetect other markdown files in your
-    `docs/<api-autonav.api_root>` directory.
+    `docs/<api-autonav.api_root_uri>` directory.
 
-1. **If `<api_title>` is a dictionary containing a list of items**  
+1. **If `<nav_section_title>` is a dictionary containing a list of items**  
 
-    If the API section is defined as `{ api-autonav.api_title: [...] }`, the plugin
+    If the API section is defined as `{ api-autonav.nav_section_title: [...] }`, the plugin
     appends its generated navigation structure to the existing list.  This
     can be used to add additional items to the API section.
 
-1. **If `<api_title>` is not found in nav**  
+1. **If `<nav_section_title>` is not found in nav**  
 
     If no API section is found in the existing nav, the plugin appends a new
     section at the end of the nav list with the generated API navigation.
