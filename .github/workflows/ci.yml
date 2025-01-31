@@ -38,6 +38,7 @@ jobs:
       - run: uv run pytest
         env:
           UV_RESOLUTION: ${{ matrix.resolution }}
+          UV_PYTHON: ${{ matrix.python-version }}
 
   deploy:
     name: Deploy
