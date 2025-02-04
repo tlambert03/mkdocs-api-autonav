@@ -11,10 +11,8 @@ Autogenerate API reference including navigation for all submodules, with
 
 ## Quick Start
 
-_Until this is published on PyPI, please install directly from GitHub._
-
 ```shell
-pip install git+https://github.com/tlambert03/mkdocs-api-autonav
+pip install mkdocs-api-autonav
 ```
 
 ```yaml
