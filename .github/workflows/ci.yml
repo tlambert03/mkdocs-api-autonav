@@ -39,6 +39,7 @@ jobs:
         env:
           UV_RESOLUTION: ${{ matrix.resolution }}
           UV_PYTHON: ${{ matrix.python-version }}
+          PYTEST_ADDOPTS: ${{ matrix.resolution == 'lowest-direct' && '-W ignore' || '' }}
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

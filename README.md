@@ -40,7 +40,8 @@ plugins:
     nav_section_title: "API Reference"
     api_root_uri: "reference" 
     nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
-    exclude_private: true  
+    exclude_private: true
+    on_implicit_namespace_packge: "warn"
 ```
 
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
@@ -54,6 +55,14 @@ plugins:
   navigation.  By default, renders a `[mod]` badge before each module.
   Set to the empty string to disable this.
 - **`exclude_private`** (`bool`) - Exclude modules that start with an underscore
+- **`on_implicit_namespace_packge`** (`str`) - What to do when an [implicit
+  namespace package](https://peps.python.org/pep-0420/) is found. An "implicit
+  namespace package" is a directory that contains python files, but no
+  `__init__.py` file; these will likely cause downstream errors for mkdocstrings.
+  Options include:
+    - `"raise"` - immediately stop and raise an error
+    - `"warn"` - log a warning, and continue (omitting the namespace package)
+    - `"skip"` - silently omit the namespace package and its children
 
 ### Integration with nav
 
@@ -142,7 +151,7 @@ documentation for my projects.
 > itself, created by [@pawamoy](https://github.com/pawamoy)
 
 This requires copying the same script and configuring three different plugins.
-All I _really_ want to do is point to the top level module(s) in my project
+All I *really* want to do is point to the top level module(s) in my project
 and have the API documentation generated for all submodules, with navigation
 matching the module structure.
 
@@ -152,6 +161,6 @@ to avoid the need for `mkdocs-gen-files` and `literate-nav`.  (Those plugins are
 fantastic, but are more than what was necessary for this specific task).
 
 It doesn't currently leave a ton of room for configuration, so it's mostly
-designed for those who want to document their _entire_ public API.  (I find
+designed for those who want to document their *entire* public API.  (I find
 it can actually be a useful way to remind myself of what I've actually
 exposed and omitted from the public API).

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import mkdocs
 import mkdocs.config
@@ -23,6 +23,8 @@ if TYPE_CHECKING:
     from mkdocs.config.defaults import MkDocsConfig
     from mkdocs.structure import StructureItem
     from mkdocs.structure.nav import Navigation
+
+    WarnRaiseSkip = Literal["warn", "raise", "skip"]
 
 
 PLUGIN_NAME = "api-autonav"  # must match [project.entry-points."mkdocs.plugins"]
@@ -46,6 +48,9 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """A prefix to add to each module name in the navigation."""
     exclude_private = mkdocs.config.config_options.Type(bool, default=True)
     """Exclude modules that start with an underscore."""
+    on_implicit_namespace_packge = mkdocs.config.config_options.Choice(
+        default="warn", choices=["raise", "warn", "skip"]
+    )
 
 
 class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
@@ -103,7 +108,9 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         for module in self.config.modules:
             # iterate (recursively) over all modules in the package
             for name_parts, docs_path in _iter_modules(
-                module, self.config.api_root_uri
+                module,
+                self.config.api_root_uri,
+                self.config.on_implicit_namespace_packge,  # type: ignore [arg-type]
             ):
                 # parts looks like -> ('top_module', 'sub', 'sub_sub')
                 # docs_path looks like -> api_root_uri/top_module/sub/sub_sub/index.md
@@ -176,7 +183,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
 
 
 def _iter_modules(
-    root_module: Path | str, docs_root: str
+    root_module: Path | str, docs_root: str, on_implicit_namespace_packge: WarnRaiseSkip
 ) -> Iterator[tuple[tuple[str, ...], str]]:
     """Recursively collect all modules starting at `module_path`.
 
@@ -184,7 +191,7 @@ def _iter_modules(
     path where the corresponding documentation file should be written.
     """
     root_module = Path(root_module)
-    for abs_path in sorted(root_module.rglob("*.py")):
+    for abs_path in _iter_py_files(root_module, on_implicit_namespace_packge):
         rel_path = abs_path.relative_to(root_module.parent)
         doc_path = rel_path.with_suffix(".md")
         full_doc_path = Path(docs_root, doc_path)
@@ -196,6 +203,59 @@ def _iter_modules(
             full_doc_path = full_doc_path.with_name("index.md")
 
         yield parts, str(full_doc_path)
+
+
+def _iter_py_files(
+    root_module: str | Path, on_implicit_namespace_packge: WarnRaiseSkip
+) -> Iterator[Path]:
+    """Recursively collect all modules starting at `root_module`.
+
+    Recursively walks from a given root folder, yielding .py files.  Allows special
+    handling of implicit namespace packages.
+    """
+    root_path = Path(root_module)
+
+    # Skip this directory entirely if it isn't an explicit package.
+    if _is_implicit_namespace_package(root_path):
+        if on_implicit_namespace_packge == "raise":
+            raise RuntimeError(
+                f"Implicit namespace package (without an __init__.py file) detected at "
+                f"{root_path}.\nThis will likely cause a collection error in "
+                "mkdocstrings.  Set 'on_implicit_namespace_packge' to 'skip' to omit "
+                "this package from the documentation, or 'warn' to include it anyway "
+                "but log a warning."
+            )
+        else:
+            if on_implicit_namespace_packge == "skip":
+                logger.info(
+                    "Skipping implicit namespace package (without an __init__.py file) "
+                    "at %s",
+                    root_path,
+                )
+            else:  # on_implicit_namespace_packge == "warn":
+                logger.warning(
+                    "Skipping implicit namespace package (without an __init__.py file) "
+                    "at %s. Set 'on_implicit_namespace_packge' to 'skip' to omit it "
+                    "without warning.",
+                    root_path,
+                )
+            return
+
+    # Yield .py files in the current directory.
+    for item in root_path.iterdir():
+        if item.is_file() and item.suffix == ".py":
+            yield item
+        elif item.is_dir():
+            yield from _iter_py_files(item, on_implicit_namespace_packge)
+
+
+def _is_implicit_namespace_package(path: Path) -> bool:
+    """Return True if the given path is an implicit namespace package.
+
+    An implicit namespace package is a directory that does not contain an
+    __init__.py file, but *does* have python files in it.
+    """
+    return not (path / "__init__.py").is_file() and any(path.glob("*.py"))
 
 
 def _merge_nav(
