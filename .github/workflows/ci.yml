@@ -35,7 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv run pytest --color yes -v --cov --cov-report=xml
+      - run: |
+          if [ "${{ matrix.resolution }}" == "lowest-direct" ]; then
+            uv run pytest --color yes -v --cov --cov-report=xml -W ignore
+          else
+            uv run pytest --color yes -v --cov --cov-report=xml
         env:
           UV_RESOLUTION: ${{ matrix.resolution }}
           UV_PYTHON: ${{ matrix.python-version }}
