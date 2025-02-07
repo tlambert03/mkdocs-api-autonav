@@ -191,7 +191,7 @@ def _iter_modules(
     path where the corresponding documentation file should be written.
     """
     root_module = Path(root_module)
-    for abs_path in _iter_py_files(root_module, on_implicit_namespace_packge):
+    for abs_path in sorted(_iter_py_files(root_module, on_implicit_namespace_packge)):
         rel_path = abs_path.relative_to(root_module.parent)
         doc_path = rel_path.with_suffix(".md")
         full_doc_path = Path(docs_root, doc_path)

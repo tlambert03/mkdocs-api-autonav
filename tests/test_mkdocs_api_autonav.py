@@ -9,7 +9,7 @@ import yaml
 from mkdocs.exceptions import Abort
 from pytest import MonkeyPatch
 
-from mkdocs_api_autonav.plugin import PluginConfig
+from mkdocs_api_autonav.plugin import PluginConfig, _iter_modules
 
 if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
@@ -65,6 +65,24 @@ def test_build(repo1: Path) -> None:
     assert (sub_mod / "index.html").is_file()
     assert (sub_sub := sub_mod / "sub_submod").is_dir()
     assert (sub_sub / "index.html").is_file()
+
+
+def test_sorting(repo1: Path) -> None:
+    package = repo1 / "src" / "my_library"
+    (package / "z_submod.py").touch()
+    (package / "a_submod.py").touch()
+    modules = [
+        x
+        for x, *_ in _iter_modules(repo1 / "src" / "my_library", str(repo1), "skip")
+        if not any(part.startswith("_") for part in x)
+    ]
+    assert modules == [
+        ("my_library",),
+        ("my_library", "a_submod"),
+        ("my_library", "submod"),
+        ("my_library", "submod", "sub_submod"),
+        ("my_library", "z_submod"),
+    ]
 
 
 def test_build_without_mkdocstrings(repo1: Path, caplog: LogCaptureFixture) -> None:
