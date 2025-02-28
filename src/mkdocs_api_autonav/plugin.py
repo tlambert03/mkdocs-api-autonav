@@ -270,7 +270,7 @@ def _merge_nav(
     for position, item in enumerate(list(cfg_nav)):
         if isinstance(item, str) and item == nav_section_title:
             # someone simply placed the string ref... replace with full nav dict
-            cfg_nav[position] = {nav_section_title: [nav_dict]}
+            cfg_nav[position] = {nav_section_title: nav_dict}
             return
 
         if isinstance(item, dict):
@@ -298,18 +298,23 @@ def _merge_nav(
                     return
 
                 # replace the string with our full nav dict
-                cfg_nav[position] = {nav_section_title: [nav_dict]}
+                cfg_nav[position] = {nav_section_title: nav_dict}
                 return
 
             if isinstance(value, list):
                 # The section exists and it is already a list of items
                 # append our new nav to the list
-                value.append(nav_dict)
+                # breaking  up nav_dict into a list of dicts, with a single key
+                # and value each
+                if len(nav_dict) == 1:
+                    value.append(nav_dict)
+                else:
+                    value.extend([{k: v} for k, v in nav_dict.items()])
                 return
 
     # we've reached the end of the list without finding the API section
     # add it to the end
-    cfg_nav.append({nav_section_title: [nav_dict]})
+    cfg_nav.append({nav_section_title: nav_dict})
 
 
 @dataclass

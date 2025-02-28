@@ -105,26 +105,31 @@ def test_build_without_mkdocstrings(repo1: Path, caplog: LogCaptureFixture) -> N
         _build_command(str(mkdocs_yml))
 
 
-@pytest.mark.parametrize(
-    "nav",
-    [
-        {"nav": ["index.md"]},
-        {"nav": ["index.md", NAV_SECTION]},
-        {"nav": ["index.md", {NAV_SECTION: API_URI}]},
-        {"nav": ["index.md", {NAV_SECTION: "differentname/"}]},
-        {"nav": ["index.md", {NAV_SECTION: ["some_file.md"]}]},
-    ],
-)
-def test_build_with_nav(repo1: Path, nav: dict, caplog: LogCaptureFixture) -> None:
-    cfg_with_nav = {**cfg_dict(strict=False), **nav}
+NAV_CASES: list[tuple[bool, dict]] = [
+    (True, {"nav": ["index.md"]}),
+    (True, {"nav": [{"Home": "index.md"}]}),
+    (True, {"nav": ["index.md", NAV_SECTION]}),
+    (True, {"nav": ["index.md", {NAV_SECTION: API_URI}]}),
+    (False, {"nav": ["index.md", {NAV_SECTION: "differentname/"}]}),
+    (False, {"nav": ["index.md", {NAV_SECTION: ["some_file.md"]}]}),
+]
+
+
+@pytest.mark.parametrize("strict, nav", NAV_CASES)
+def test_build_with_nav(
+    repo1: Path, strict: bool, nav: dict, caplog: LogCaptureFixture
+) -> None:
+    cfg_with_nav = {**cfg_dict(strict=strict), **nav}
     mkdocs_yml = repo1 / "mkdocs.yml"
     mkdocs_yml.write_text(yaml.safe_dump(cfg_with_nav))
     _build_command(str(mkdocs_yml))
 
-    assert bool(caplog.messages) == (
+    expect_message =  bool(
         isinstance(nav_dict := nav["nav"][-1], dict)
-        and nav_dict.get(NAV_SECTION) != API_URI
+        and (nav_sec := nav_dict.get(NAV_SECTION))
+        and nav_sec != API_URI
     )
+    assert bool(caplog.messages) == expect_message
 
     assert (ref := repo1 / "site" / "reference").is_dir()
     assert (lib := ref / "my_library").is_dir()
@@ -181,3 +186,19 @@ def test_warns_on_bad_structure(repo1: Path, caplog: LogCaptureFixture) -> None:
         "api-autonav: Skipping implicit namespace package" in line
         for line in caplog.messages
     )
+
+
+@pytest.mark.parametrize("strict, nav", NAV_CASES)
+# duplicate my_library to my_library2 and add two top level submodules to config
+def test_multi_package(repo1: Path, strict: bool, nav: dict) -> None:
+    cfg_with_nav = {**cfg_dict(strict=strict), **nav}
+
+    # add another package
+    shutil.copytree(repo1 / "src" / "my_library", repo1 / "src" / "my_library2")
+    cfg_with_nav["plugins"][2]["api-autonav"]["modules"].append("src/my_library2")
+
+    # this is important to trigger a possible bug:
+    mkdocs_yml = repo1 / "mkdocs.yml"
+    mkdocs_yml.write_text(yaml.safe_dump(cfg_with_nav))
+    _build_command(str(mkdocs_yml))
+    assert (ref := repo1 / "site" / "reference").is_dir()
