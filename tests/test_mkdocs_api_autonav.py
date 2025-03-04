@@ -40,7 +40,12 @@ def cfg_dict(strict: bool = False) -> dict:
         "plugins": [
             "search",
             {"mkdocstrings": {}},
-            {"api-autonav": {"modules": ["src/my_library"]}},
+            {
+                "api-autonav": {
+                    "modules": ["src/my_library"],
+                    "exclude": ["my_library.exclude_me"],
+                }
+            },
         ],
     }
 
@@ -65,6 +70,7 @@ def test_build(repo1: Path) -> None:
     assert (sub_mod / "index.html").is_file()
     assert (sub_sub := sub_mod / "sub_submod").is_dir()
     assert (sub_sub / "index.html").is_file()
+    assert not any(lib.rglob("*exclude_me*"))
 
 
 def test_sorting(repo1: Path) -> None:
@@ -79,6 +85,7 @@ def test_sorting(repo1: Path) -> None:
     assert modules == [
         ("my_library",),
         ("my_library", "a_submod"),
+        ("my_library", "exclude_me"),
         ("my_library", "submod"),
         ("my_library", "submod", "sub_submod"),
         ("my_library", "z_submod"),
@@ -124,7 +131,7 @@ def test_build_with_nav(
     mkdocs_yml.write_text(yaml.safe_dump(cfg_with_nav))
     _build_command(str(mkdocs_yml))
 
-    expect_message =  bool(
+    expect_message = bool(
         isinstance(nav_dict := nav["nav"][-1], dict)
         and (nav_sec := nav_dict.get(NAV_SECTION))
         and nav_sec != API_URI
