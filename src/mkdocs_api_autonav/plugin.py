@@ -140,19 +140,19 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 # Check direct path exclusions
                 mod_path = ".".join(name_parts)
                 if any(mod_path == x or mod_path.startswith(x) for x in exclude_paths):
-                    logger.info("Excluding module (path match): %s", mod_path)
+                    logger.info("Excluding   %r due to config.exclude", mod_path)
                     continue
 
                 # Check regex exclusions
                 if any(pattern.search(mod_path) for pattern in exclude_patterns):
-                    logger.info("Excluding module (regex match): %s", mod_path)
+                    logger.info("Excluding   %r due to config.exclude", mod_path)
                     continue
 
                 # create the actual markdown that will go into the virtual file
                 content = self._module_markdown(name_parts)
 
                 # generate a mkdocs File object and add it to the collection
-                logger.info("Writing virtual file: %s", docs_path)
+                logger.info("Documenting %r in virtual file: %s", mod_path, docs_path)
                 file = File.generated(config, src_uri=docs_path, content=content)
                 if file.src_uri in files.src_uris:  # pragma: no cover
                     files.remove(file)
@@ -233,6 +233,11 @@ def _iter_modules(
             parts = parts[:-1]
             doc_path = doc_path.with_name("index.md")
             full_doc_path = full_doc_path.with_name("index.md")
+        if parts[-1] == "index":
+            # deal with the special case of a module named 'index.py'
+            # we don't want to name it index.md, since that is a special
+            # name for a directory index
+            full_doc_path = full_doc_path.with_name("index_py.md")
 
         yield parts, str(full_doc_path)
 
