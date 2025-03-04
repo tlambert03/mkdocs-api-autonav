@@ -115,7 +115,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 # Regex pattern
                 try:
                     exclude_patterns.append(re.compile(pattern[3:]))
-                except re.error:
+                except re.error:  # pragma: no cover
                     logger.error("Invalid regex pattern: %s", pattern[3:])
             else:
                 # Direct module path
@@ -154,7 +154,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 # generate a mkdocs File object and add it to the collection
                 logger.info("Writing virtual file: %s", docs_path)
                 file = File.generated(config, src_uri=docs_path, content=content)
-                if file.src_uri in files.src_uris:
+                if file.src_uri in files.src_uris:  # pragma: no cover
                     files.remove(file)
                 files.append(file)
 
