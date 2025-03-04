@@ -46,7 +46,12 @@ plugins:
 
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
   navigation, relative to the project root.  This is the only required
-  configuration.
+  configuration. (e.g., `["src/package"]`)
+- **`exclude`** (`list[str]`) - List of module paths or patterns to exclude.
+  Can be specified as exact module paths (e.g., `["package.module"]`),
+  which will also exclude any submodules, or as regex patterns prefixed with `'re:'`
+  (e.g., `["re:package\\.utils\\..*"]`). Regex patterns are matched against the full
+  module path.
 - **`nav_section_title`** (`str`) - Title for the API reference section as it appears in
   the navigation. Default is "API Reference"
 - **`api_root_uri`** (`str`) - Root folder for api docs in the generated site. This

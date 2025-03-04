@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import re
 from typing import TYPE_CHECKING, Literal, cast
 
 import mkdocs
 import mkdocs.config
-import mkdocs.config.config_options
+import mkdocs.config.config_options as opt
 from mkdocs.config import Config
 from mkdocs.config.config_options import Plugins
 from mkdocs.config.defaults import get_schema
@@ -38,17 +39,19 @@ logger = get_plugin_logger(PLUGIN_NAME)
 class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """Our configuration options."""
 
-    modules = mkdocs.config.config_options.ListOfPaths()
-    """List of paths to Python modules to include in the navigation."""
-    nav_section_title = mkdocs.config.config_options.Type(str, default="API Reference")
+    modules = opt.ListOfPaths()
+    """List of paths to Python modules to include in the navigation. (e.g. ['src/package'])."""
+    exclude = opt.ListOfItems[str](opt.Type(str), default=[])
+    """List of module paths or patterns to exclude (e.g. ['package.module', 're:package\\..*_utils'])."""
+    nav_section_title = opt.Type(str, default="API Reference")
     """Title for the API reference section as it appears in the navigation."""
-    api_root_uri = mkdocs.config.config_options.Type(str, default="reference")
+    api_root_uri = opt.Type(str, default="reference")
     """Root folder for api docs in the generated site."""
-    nav_item_prefix = mkdocs.config.config_options.Type(str, default=MOD_SYMBOL)
+    nav_item_prefix = opt.Type(str, default=MOD_SYMBOL)
     """A prefix to add to each module name in the navigation."""
-    exclude_private = mkdocs.config.config_options.Type(bool, default=True)
+    exclude_private = opt.Type(bool, default=True)
     """Exclude modules that start with an underscore."""
-    on_implicit_namespace_packge = mkdocs.config.config_options.Choice(
+    on_implicit_namespace_packge = opt.Choice(
         default="warn", choices=["raise", "warn", "skip"]
     )
 
@@ -103,6 +106,20 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         (each )
         """
         exclude_private = self.config.exclude_private
+        exclude_patterns: list[re.Pattern] = []
+        exclude_paths: list[str] = []
+
+        # Preprocess exclude patterns
+        for pattern in self.config.exclude:
+            if pattern.startswith("re:"):
+                # Regex pattern
+                try:
+                    exclude_patterns.append(re.compile(pattern[3:]))
+                except re.error:  # pragma: no cover
+                    logger.error("Invalid regex pattern: %s", pattern[3:])
+            else:
+                # Direct module path
+                exclude_paths.append(pattern)
 
         # for each top-level module specified in plugins.api-autonav.modules
         for module in self.config.modules:
@@ -115,7 +132,20 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 # parts looks like -> ('top_module', 'sub', 'sub_sub')
                 # docs_path looks like -> api_root_uri/top_module/sub/sub_sub/index.md
                 #   and refers to the location in the BUILT site directory
+
+                # Check exclusion conditions
                 if exclude_private and any(part.startswith("_") for part in name_parts):
+                    continue
+
+                # Check direct path exclusions
+                mod_path = ".".join(name_parts)
+                if any(mod_path == x or mod_path.startswith(x) for x in exclude_paths):
+                    logger.info("Excluding module (path match): %s", mod_path)
+                    continue
+
+                # Check regex exclusions
+                if any(pattern.search(mod_path) for pattern in exclude_patterns):
+                    logger.info("Excluding module (regex match): %s", mod_path)
                     continue
 
                 # create the actual markdown that will go into the virtual file
@@ -124,6 +154,8 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 # generate a mkdocs File object and add it to the collection
                 logger.info("Writing virtual file: %s", docs_path)
                 file = File.generated(config, src_uri=docs_path, content=content)
+                if file.src_uri in files.src_uris:  # pragma: no cover
+                    files.remove(file)
                 files.append(file)
 
                 # update our navigation tree
