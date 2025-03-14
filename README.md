@@ -9,6 +9,8 @@
 Autogenerate API reference including navigation for all submodules, with
 [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings).
 
+*(removes the need for using a [custom script](#why-this-plugin) alongside `mkdocs-gen-files` and `literate-nav`)*
+
 ## Quick Start
 
 ```shell
