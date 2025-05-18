@@ -39,6 +39,7 @@ repository = "https://github.com/tlambert03/mkdocs-api-autonav"
 [dependency-groups]
 dev = [
     "ipython>=8.18.1",
+    "mkdocs-awesome-nav>=3.1.1 ; python_full_version >= '3.10'",
     "mypy>=1.14.1",
     "pdbpp>=0.10.3",
     "pre-commit>=4.1.0",

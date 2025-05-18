@@ -107,6 +107,15 @@ existing `nav` configuration.
     If no API section is found in the existing nav, the plugin appends a new
     section at the end of the nav list with the generated API navigation.
 
+### Integration with mkdocs-awesome-nav
+
+[`mkdocs-awesome-nav`](https://lukasgeiter.github.io/mkdocs-awesome-nav/)
+["completely discards the navigation that MkDocs and other plugins
+generate"](https://lukasgeiter.github.io/mkdocs-awesome-nav/philosophy/), and as
+such requires special consideration.  Currently, the only way we integrate with
+`mkdocs-awesome-nav` is to add the generated API navigation to the end of the
+`nav` list, with the name `nav_section_title` from your config.
+
 ## Configuring Docstrings
 
 Since mkdocstrings is used to generate the API documentation, you can configure
