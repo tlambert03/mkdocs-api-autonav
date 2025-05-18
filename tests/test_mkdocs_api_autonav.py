@@ -239,6 +239,7 @@ def test_index_py_module(repo1: Path) -> None:
 
 
 def test_awesome_nav_compat(repo1: Path) -> None:
+    pytest.importorskip("mkdocs_awesome_nav")
     nav = repo1.joinpath("docs", ".nav.yml")
     nav.write_text('nav:\n  - "index.md"\n')
 
