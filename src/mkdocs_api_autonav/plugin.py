@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import mkdocs.config.config_options as opt
 from mkdocs.config import Config
-from mkdocs.config.config_options import Plugins
 from mkdocs.config.defaults import get_schema
 from mkdocs.plugins import BasePlugin, get_plugin_logger
 from mkdocs.structure.files import File, Files
@@ -19,6 +18,7 @@ from mkdocs.structure.pages import Page
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from mkdocs.config.config_options import Plugins
     from mkdocs.config.defaults import MkDocsConfig
     from mkdocs.structure import StructureItem
     from mkdocs.structure.nav import Navigation
@@ -66,7 +66,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         if "mkdocstrings" not in config["plugins"]:
             for name, option in get_schema():
                 if name == "plugins":
-                    plugins_option = cast(Plugins, option)
+                    plugins_option = cast("Plugins", option)
                     plugins_option.load_plugin_with_namespace("mkdocstrings", {})
                     logger.warning(
                         "'mkdocstrings' wasn't found in the plugins list. "
