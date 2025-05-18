@@ -527,7 +527,7 @@ dev = [
     { name = "ipython", version = "8.36.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "ipython", version = "9.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "mypy" },
-    { name = "pdbpp", marker = "sys_platform != 'win32'" },
+    { name = "pdbpp", marker = "sys_platform == 'darwin'" },
     { name = "pre-commit-uv" },
     { name = "pyright" },
     { name = "pytest" },
@@ -546,7 +546,7 @@ requires-dist = [
 dev = [
     { name = "ipython", specifier = ">=8.18.1" },
     { name = "mypy", specifier = ">=1.14.1" },
-    { name = "pdbpp", marker = "sys_platform != 'win32'", specifier = ">=0.10.3" },
+    { name = "pdbpp", marker = "sys_platform == 'darwin'", specifier = ">=0.10.3" },
     { name = "pre-commit-uv", specifier = ">=4.1.0" },
     { name = "pyright", specifier = ">=1.1.393" },
     { name = "pytest", specifier = ">=8.3.4" },
