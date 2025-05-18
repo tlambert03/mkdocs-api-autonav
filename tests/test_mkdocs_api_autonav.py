@@ -174,7 +174,7 @@ def test_build_with_nav_conflict(repo1: Path, caplog: LogCaptureFixture) -> None
 
 def test_warns_on_bad_structure(repo1: Path, caplog: LogCaptureFixture) -> None:
     cfg = cfg_dict(strict=True)
-    cfg["plugins"][2]["api-autonav"]["on_implicit_namespace_packge"] = "raise"
+    cfg["plugins"][2]["api-autonav"]["on_implicit_namespace_package"] = "raise"
     mkdocs_yml = repo1 / "mkdocs.yml"
     mkdocs_yml.write_text(yaml.safe_dump(cfg))
     # add a submodule that doesn't have an __init__.py
@@ -187,7 +187,7 @@ def test_warns_on_bad_structure(repo1: Path, caplog: LogCaptureFixture) -> None:
         _build_command(str(mkdocs_yml))
 
     caplog.clear()
-    cfg["plugins"][2]["api-autonav"]["on_implicit_namespace_packge"] = "warn"
+    cfg["plugins"][2]["api-autonav"]["on_implicit_namespace_package"] = "warn"
     mkdocs_yml.write_text(yaml.safe_dump(cfg))
     with pytest.raises(Abort):
         _build_command(str(mkdocs_yml))
@@ -198,7 +198,7 @@ def test_warns_on_bad_structure(repo1: Path, caplog: LogCaptureFixture) -> None:
 
     caplog.clear()
     caplog.set_level("INFO")
-    cfg["plugins"][2]["api-autonav"]["on_implicit_namespace_packge"] = "skip"
+    cfg["plugins"][2]["api-autonav"]["on_implicit_namespace_package"] = "skip"
     mkdocs_yml.write_text(yaml.safe_dump(cfg))
     _build_command(str(mkdocs_yml))
     assert any(
@@ -220,7 +220,7 @@ def test_multi_package(repo1: Path, strict: bool, nav: dict) -> None:
     mkdocs_yml = repo1 / "mkdocs.yml"
     mkdocs_yml.write_text(yaml.safe_dump(cfg_with_nav))
     _build_command(str(mkdocs_yml))
-    assert (ref := repo1 / "site" / "reference").is_dir()
+    assert (repo1 / "site" / "reference").is_dir()
 
 
 def test_index_py_module(repo1: Path) -> None:

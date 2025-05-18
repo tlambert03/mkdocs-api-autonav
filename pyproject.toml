@@ -40,8 +40,8 @@ repository = "https://github.com/tlambert03/mkdocs-api-autonav"
 dev = [
     "ipython>=8.18.1",
     "mypy>=1.14.1",
-    "pdbpp>=0.10.3",
-    "pre-commit>=4.1.0",
+    "pdbpp>=0.10.3; sys_platform == 'darwin'",
+    "pre-commit-uv>=4.1.0",
     "pyright>=1.1.393",
     "pytest>=8.3.4",
     "pytest-cov>=6.0.0",

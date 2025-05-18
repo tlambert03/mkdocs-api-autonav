@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
-import re
 from typing import TYPE_CHECKING, Literal, cast
 
-import mkdocs
-import mkdocs.config
 import mkdocs.config.config_options as opt
 from mkdocs.config import Config
-from mkdocs.config.config_options import Plugins
 from mkdocs.config.defaults import get_schema
 from mkdocs.plugins import BasePlugin, get_plugin_logger
 from mkdocs.structure.files import File, Files
@@ -21,6 +18,7 @@ from mkdocs.structure.pages import Page
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from mkdocs.config.config_options import Plugins
     from mkdocs.config.defaults import MkDocsConfig
     from mkdocs.structure import StructureItem
     from mkdocs.structure.nav import Navigation
@@ -40,9 +38,9 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """Our configuration options."""
 
     modules = opt.ListOfPaths()
-    """List of paths to Python modules to include in the navigation. (e.g. ['src/package'])."""
+    """List of paths to Python modules to include in the navigation. (e.g. ['src/package'])."""  # noqa
     exclude = opt.ListOfItems[str](opt.Type(str), default=[])
-    """List of module paths or patterns to exclude (e.g. ['package.module', 're:package\\..*_utils'])."""
+    """List of module paths or patterns to exclude (e.g. ['package.module', 're:package\\..*_utils'])."""  # noqa
     nav_section_title = opt.Type(str, default="API Reference")
     """Title for the API reference section as it appears in the navigation."""
     api_root_uri = opt.Type(str, default="reference")
@@ -51,7 +49,7 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """A prefix to add to each module name in the navigation."""
     exclude_private = opt.Type(bool, default=True)
     """Exclude modules that start with an underscore."""
-    on_implicit_namespace_packge = opt.Choice(
+    on_implicit_namespace_package = opt.Choice(
         default="warn", choices=["raise", "warn", "skip"]
     )
 
@@ -68,7 +66,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         if "mkdocstrings" not in config["plugins"]:
             for name, option in get_schema():
                 if name == "plugins":
-                    plugins_option = cast(Plugins, option)
+                    plugins_option = cast("Plugins", option)
                     plugins_option.load_plugin_with_namespace("mkdocstrings", {})
                     logger.warning(
                         "'mkdocstrings' wasn't found in the plugins list. "
@@ -127,7 +125,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
             for name_parts, docs_path in _iter_modules(
                 module,
                 self.config.api_root_uri,
-                self.config.on_implicit_namespace_packge,  # type: ignore [arg-type]
+                self.config.on_implicit_namespace_package,  # type: ignore [arg-type]
             ):
                 # parts looks like -> ('top_module', 'sub', 'sub_sub')
                 # docs_path looks like -> api_root_uri/top_module/sub/sub_sub/index.md
@@ -215,7 +213,9 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
 
 
 def _iter_modules(
-    root_module: Path | str, docs_root: str, on_implicit_namespace_packge: WarnRaiseSkip
+    root_module: Path | str,
+    docs_root: str,
+    on_implicit_namespace_package: WarnRaiseSkip,
 ) -> Iterator[tuple[tuple[str, ...], str]]:
     """Recursively collect all modules starting at `module_path`.
 
@@ -223,7 +223,7 @@ def _iter_modules(
     path where the corresponding documentation file should be written.
     """
     root_module = Path(root_module)
-    for abs_path in sorted(_iter_py_files(root_module, on_implicit_namespace_packge)):
+    for abs_path in sorted(_iter_py_files(root_module, on_implicit_namespace_package)):
         rel_path = abs_path.relative_to(root_module.parent)
         doc_path = rel_path.with_suffix(".md")
         full_doc_path = Path(docs_root, doc_path)
@@ -243,7 +243,7 @@ def _iter_modules(
 
 
 def _iter_py_files(
-    root_module: str | Path, on_implicit_namespace_packge: WarnRaiseSkip
+    root_module: str | Path, on_implicit_namespace_package: WarnRaiseSkip
 ) -> Iterator[Path]:
     """Recursively collect all modules starting at `root_module`.
 
@@ -254,25 +254,25 @@ def _iter_py_files(
 
     # Skip this directory entirely if it isn't an explicit package.
     if _is_implicit_namespace_package(root_path):
-        if on_implicit_namespace_packge == "raise":
+        if on_implicit_namespace_package == "raise":
             raise RuntimeError(
                 f"Implicit namespace package (without an __init__.py file) detected at "
                 f"{root_path}.\nThis will likely cause a collection error in "
-                "mkdocstrings.  Set 'on_implicit_namespace_packge' to 'skip' to omit "
+                "mkdocstrings.  Set 'on_implicit_namespace_package' to 'skip' to omit "
                 "this package from the documentation, or 'warn' to include it anyway "
                 "but log a warning."
             )
         else:
-            if on_implicit_namespace_packge == "skip":
+            if on_implicit_namespace_package == "skip":
                 logger.info(
                     "Skipping implicit namespace package (without an __init__.py file) "
                     "at %s",
                     root_path,
                 )
-            else:  # on_implicit_namespace_packge == "warn":
+            else:  # on_implicit_namespace_package == "warn":
                 logger.warning(
                     "Skipping implicit namespace package (without an __init__.py file) "
-                    "at %s. Set 'on_implicit_namespace_packge' to 'skip' to omit it "
+                    "at %s. Set 'on_implicit_namespace_package' to 'skip' to omit it "
                     "without warning.",
                     root_path,
                 )
@@ -283,7 +283,7 @@ def _iter_py_files(
         if item.is_file() and item.suffix == ".py":
             yield item
         elif item.is_dir():
-            yield from _iter_py_files(item, on_implicit_namespace_packge)
+            yield from _iter_py_files(item, on_implicit_namespace_package)
 
 
 def _is_implicit_namespace_package(path: Path) -> bool:
