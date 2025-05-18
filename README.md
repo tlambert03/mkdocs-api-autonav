@@ -43,7 +43,7 @@ plugins:
     api_root_uri: "reference" 
     nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
     exclude_private: true
-    on_implicit_namespace_packge: "warn"
+    on_implicit_namespace_package: "warn"
 ```
 
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
@@ -62,7 +62,7 @@ plugins:
   navigation.  By default, renders a `[mod]` badge before each module.
   Set to the empty string to disable this.
 - **`exclude_private`** (`bool`) - Exclude modules that start with an underscore
-- **`on_implicit_namespace_packge`** (`str`) - What to do when an [implicit
+- **`on_implicit_namespace_package`** (`str`) - What to do when an [implicit
   namespace package](https://peps.python.org/pep-0420/) is found. An "implicit
   namespace package" is a directory that contains python files, but no
   `__init__.py` file; these will likely cause downstream errors for mkdocstrings.
