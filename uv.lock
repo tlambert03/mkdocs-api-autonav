@@ -540,6 +540,7 @@ source = { editable = "." }
 dependencies = [
     { name = "mkdocs" },
     { name = "mkdocstrings-python" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -563,6 +564,7 @@ dev = [
 requires-dist = [
     { name = "mkdocs", specifier = ">=1.6" },
     { name = "mkdocstrings-python", specifier = ">=1.11.0" },
+    { name = "pyyaml", specifier = ">=5" },
 ]
 
 [package.metadata.requires-dev]
