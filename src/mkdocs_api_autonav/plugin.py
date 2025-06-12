@@ -104,7 +104,6 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         md = f"---\ntitle: {mod_identifier}\n---\n\n::: {mod_identifier}\n"
         if mod_identifier in self.config.module_options:
             options = self.config.module_options[mod_identifier]
-
             # add the options to the markdown
             options_str = yaml.dump({"options": options}, default_flow_style=False)
             md += indent(options_str, "    ")
