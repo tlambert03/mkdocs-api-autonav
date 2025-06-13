@@ -5,9 +5,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from textwrap import indent
 from typing import TYPE_CHECKING, Literal, cast
 
 import mkdocs.config.config_options as opt
+import yaml
 from mkdocs.config import Config
 from mkdocs.config.defaults import get_schema
 from mkdocs.plugins import BasePlugin, get_plugin_logger
@@ -39,6 +41,8 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
 
     modules = opt.ListOfPaths()
     """List of paths to Python modules to include in the navigation. (e.g. ['src/package'])."""  # noqa
+    module_options = opt.Type(dict, default={})
+    """Dictionary of options for each module. The keys are module identifiers, and the values are [options for mkdocstrings-python](https://mkdocstrings.github.io/python/usage/#globallocal-options)."""  # noqa
     exclude = opt.ListOfItems[str](opt.Type(str), default=[])
     """List of module paths or patterns to exclude (e.g. ['package.module', 're:package\\..*_utils'])."""  # noqa
     nav_section_title = opt.Type(str, default="API Reference")
@@ -97,7 +101,13 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         """
         mod_identifier = ".".join(parts)  # top_module.sub.sub_sub
         # create the actual markdown that will go into the virtual file
-        return f"---\ntitle: {mod_identifier}\n---\n\n::: {mod_identifier}"
+        md = f"---\ntitle: {mod_identifier}\n---\n\n::: {mod_identifier}\n"
+        if mod_identifier in self.config.module_options:
+            options = self.config.module_options[mod_identifier]
+            # add the options to the markdown
+            options_str = yaml.dump({"options": options}, default_flow_style=False)
+            md += indent(options_str, "    ")
+        return md
 
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> None:
         """Called after the files collection is populated from the `docs_dir`.
