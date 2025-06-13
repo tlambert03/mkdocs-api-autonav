@@ -38,9 +38,10 @@ Here are all the configurables, along with their default values.
 ```yaml
 plugins:
 - api-autonav:
-    modules: []  
+    modules: []
+    module_options: {}
     nav_section_title: "API Reference"
-    api_root_uri: "reference" 
+    api_root_uri: "reference"
     nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
     exclude_private: true
     on_implicit_namespace_package: "warn"
@@ -49,6 +50,21 @@ plugins:
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
   navigation, relative to the project root.  This is the only required
   configuration. (e.g., `["src/package"]`)
+- **`module_options`** (`dict[str, dict]`) - Dictionary of local options to pass to
+  `mkdocstrings` for specific modules. The keys are python identifiers (e.g.,
+  `package.module`) and the values are dictionaries of [local options to pass to
+  `mkdocstrings`](https://mkdocstrings.github.io/python/usage/#globallocal-options)
+  for that specific module.
+
+  ```yaml
+  - api-autonav:
+      modules: ['src/package']
+      module_options:
+        package.submodule:
+          docstring_style: google
+          show_signature: false
+  ```
+
 - **`exclude`** (`list[str]`) - List of module paths or patterns to exclude.
   Can be specified as exact module paths (e.g., `["package.module"]`),
   which will also exclude any submodules, or as regex patterns prefixed with `'re:'`
