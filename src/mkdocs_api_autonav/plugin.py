@@ -53,7 +53,7 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """A prefix to add to each module name in the navigation."""
     exclude_private = opt.Type(bool, default=True)
     """Exclude modules that start with an underscore."""
-    show_full_namespace = opt.Type(bool, default=False)
+    show_full_namespace = opt.Type(bool, default=True)
     """Show the full namespace for each module in the navigation.  If false, only the module name will be shown."""  # noqa
     on_implicit_namespace_package = opt.Choice(
         default="warn", choices=["raise", "warn", "skip"]

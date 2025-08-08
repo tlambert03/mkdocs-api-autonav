@@ -44,6 +44,7 @@ plugins:
     api_root_uri: "reference"
     nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
     exclude_private: true
+    show_full_namespace: true
     on_implicit_namespace_package: "warn"
 ```
 
@@ -65,19 +66,23 @@ plugins:
           show_signature: false
   ```
 
-- **`exclude`** (`list[str]`) - List of module paths or patterns to exclude.
-  Can be specified as exact module paths (e.g., `["package.module"]`),
-  which will also exclude any submodules, or as regex patterns prefixed with `'re:'`
-  (e.g., `["re:package\\.utils\\..*"]`). Regex patterns are matched against the full
+- **`exclude`** (`list[str]`) - List of module paths or patterns to exclude. Can
+  be specified as exact module paths (e.g., `["package.module"]`), which will
+  also exclude any submodules, or as regex patterns prefixed with `'re:'` (e.g.,
+  `["re:package\\.utils\\..*"]`). Regex patterns are matched against the full
   module path.
-- **`nav_section_title`** (`str`) - Title for the API reference section as it appears in
-  the navigation. Default is "API Reference"
-- **`api_root_uri`** (`str`) - Root folder for api docs in the generated site. This
-  determines the url path for the API documentation. Default is "reference"
+- **`nav_section_title`** (`str`) - Title for the API reference section as it
+  appears in the navigation. Default is "API Reference"
+- **`api_root_uri`** (`str`) - Root folder for api docs in the generated site.
+  This determines the url path for the API documentation. Default is "reference"
 - **`nav_item_prefix`** (`str`) - A prefix to add to each module name in the
-  navigation.  By default, renders a `[mod]` badge before each module.
-  Set to the empty string to disable this.
-- **`exclude_private`** (`bool`) - Exclude modules that start with an underscore
+  navigation.  By default, renders a `[mod]` badge before each module. Set to
+  the empty string to disable this.
+- **`exclude_private`** (`bool`) - Exclude modules that start with an
+  underscore.  `True` by default.
+- **`show_full_namespace`** (`bool`) - Show the full namespace in the navigation
+  title (as opposed to just the leaf module name). `True` by default.  Set to false
+  to avoid clipping of long, nested module names.
 - **`on_implicit_namespace_package`** (`str`) - What to do when an [implicit
   namespace package](https://peps.python.org/pep-0420/) is found. An "implicit
   namespace package" is a directory that contains python files, but no
