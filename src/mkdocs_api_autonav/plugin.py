@@ -18,7 +18,7 @@ from mkdocs.structure.nav import Section
 from mkdocs.structure.pages import Page
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from mkdocs.config.config_options import Plugins
     from mkdocs.config.defaults import MkDocsConfig
@@ -53,9 +53,12 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """A prefix to add to each module name in the navigation."""
     exclude_private = opt.Type(bool, default=True)
     """Exclude modules that start with an underscore."""
+    show_full_namespace = opt.Type(bool, default=False)
+    """Show the full namespace for each module in the navigation.  If false, only the module name will be shown."""  # noqa
     on_implicit_namespace_package = opt.Choice(
         default="warn", choices=["raise", "warn", "skip"]
     )
+    """What to do when encountering an implicit namespace package."""
 
 
 class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
@@ -104,7 +107,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         """
         mod_identifier = ".".join(parts)  # top_module.sub.sub_sub
         # create the actual markdown that will go into the virtual file
-        md = f"---\ntitle: {mod_identifier}\n---\n\n::: {mod_identifier}\n"
+        md = f"---\ntitle: {self._display_title(parts)}\n---\n\n::: {mod_identifier}\n"
         if mod_identifier in self.config.module_options:
             options = self.config.module_options[mod_identifier]
             # add the options to the markdown
@@ -173,7 +176,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 if self._uses_awesome_nav and docs_path.endswith("index.md"):
                     # https://lukasgeiter.github.io/mkdocs-awesome-nav/features/titles/
                     nav_path = docs_path.replace("index.md", ".nav.yml")
-                    content = f"title: {mod_path}\n"
+                    content = f"title: {self._display_title(name_parts)}\n"
                     nav_yml = File.generated(config, src_uri=nav_path, content=content)
                     files.append(nav_yml)
 
@@ -208,6 +211,11 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                     item.title = self.config.nav_section_title
                     break
         return nav
+
+    def _display_title(self, parts: Sequence[str]) -> str:
+        if self.config.show_full_namespace:
+            return ".".join(parts)
+        return parts[-1]
 
     def _fix_nav_item(self, item: StructureItem) -> None:
         """Recursively fix titles of members in section.
