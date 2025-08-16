@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from textwrap import indent
+from textwrap import dedent, indent
 from typing import TYPE_CHECKING, Literal, cast
 
 import mkdocs.config.config_options as opt
@@ -53,7 +53,7 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
     """A prefix to add to each module name in the navigation."""
     exclude_private = opt.Type(bool, default=True)
     """Exclude modules that start with an underscore."""
-    show_full_namespace = opt.Type(bool, default=True)
+    show_full_namespace = opt.Type(bool, default=False)
     """Show the full namespace for each module in the navigation.  If false, only the module name will be shown."""  # noqa
     on_implicit_namespace_package = opt.Choice(
         default="warn", choices=["raise", "warn", "skip"]
@@ -88,7 +88,9 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                     break
 
         self.nav = _NavNode(
-            name_prefix=self.config.nav_item_prefix, title=self.config.nav_section_title
+            name_prefix=self.config.nav_item_prefix,
+            title=self.config.nav_section_title,
+            show_full_namespace=self.config.show_full_namespace,
         )
         return None
 
@@ -106,13 +108,30 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         ::: top_module.sub.sub_sub
         """
         mod_identifier = ".".join(parts)  # top_module.sub.sub_sub
+        options = {"heading_level": 1}  # very useful default... but can be overridden
+        for option in self.config.module_options:
+            if re.match(option, mod_identifier):
+                # if the option is a regex, it matches the module identifier
+                options.update(self.config.module_options[option])
+
         # create the actual markdown that will go into the virtual file
-        md = f"---\ntitle: {self._display_title(parts)}\n---\n\n::: {mod_identifier}\n"
-        if mod_identifier in self.config.module_options:
-            options = self.config.module_options[mod_identifier]
-            # add the options to the markdown
-            options_str = yaml.dump({"options": options}, default_flow_style=False)
-            md += indent(options_str, "    ")
+        if int(options.get("heading_level", 1)) > 1:
+            h1 = f"# {mod_identifier}"
+        else:
+            h1 = ""
+            options.setdefault("show_root_heading", True)
+
+        md = f"""
+        ---
+        title: {self._display_title(parts)}
+        ---
+        {h1}
+
+        ::: {mod_identifier}
+        """
+
+        options_str = yaml.dump({"options": options}, default_flow_style=False)
+        md = dedent(md).lstrip() + indent(options_str, "    ")
         return md
 
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> None:
@@ -229,7 +248,17 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 Page(title='{prefix}module', url='/reference/module/')
         """
         if isinstance(item, Section):
-            item.title = f"{self.config.nav_item_prefix}{item.title.lower()}"
+            parts = []
+            # make sure that Section titles *also* obey the full namespace rules
+            if self.config.show_full_namespace:
+                parts = [
+                    x.title.split(">")[-1]
+                    for x in list(item.ancestors)[:-1]
+                    if isinstance(x, Section)
+                ]
+            parts.append(item.title.lower())
+            title = ".".join(parts).replace(" ", "_")
+            item.title = f"{self.config.nav_item_prefix}{title}"
             for child in item.children:
                 self._fix_nav_item(child)
         elif isinstance(item, Page):
@@ -403,6 +432,7 @@ class _NavNode:
     name_prefix: str = ""
     file: File | None = None
     title: str = ""
+    show_full_namespace: bool = False
 
     def as_dict(self) -> dict:
         return {
@@ -415,8 +445,12 @@ class _NavNode:
         node = self
         for part in parts:
             if part not in node.children:
+                title = ".".join(parts) if self.show_full_namespace else part
                 node.children[part] = _NavNode(
-                    name_prefix=node.name_prefix, file=file, title=part
+                    name_prefix=node.name_prefix,
+                    file=file,
+                    title=title,
+                    show_full_namespace=node.show_full_namespace,
                 )
             node = node.children[part]
         node.doc_path = doc_path
