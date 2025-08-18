@@ -44,17 +44,20 @@ plugins:
     api_root_uri: "reference"
     nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
     exclude_private: true
+    show_full_namespace: false
     on_implicit_namespace_package: "warn"
 ```
 
 - **`modules`** (`list[str]`)- List of paths to Python modules to include in the
   navigation, relative to the project root.  This is the only required
   configuration. (e.g., `["src/package"]`)
-- **`module_options`** (`dict[str, dict]`) - Dictionary of local options to pass to
-  `mkdocstrings` for specific modules. The keys are python identifiers (e.g.,
-  `package.module`) and the values are dictionaries of [local options to pass to
+- **`module_options`** (`dict[str, dict]`) - Dictionary of local options to pass
+  to `mkdocstrings` for specific modules. The keys are python identifiers or a
+  regex pattern to match (e.g., `package.module` or `.*\.some_module`) and the values are
+  dictionaries of [local options to pass to
   `mkdocstrings`](https://mkdocstrings.github.io/python/usage/#globallocal-options)
-  for that specific module.
+  for that specific module.  To specify options for *all* modules, use the
+  `.*` regex pattern (or add it to your global mkdocstrings config)
 
   ```yaml
   - api-autonav:
@@ -63,21 +66,33 @@ plugins:
         package.submodule:
           docstring_style: google
           show_signature: false
+        ".*":
+          heading_level: 1
+          show_symbol_type_heading: true
   ```
 
-- **`exclude`** (`list[str]`) - List of module paths or patterns to exclude.
-  Can be specified as exact module paths (e.g., `["package.module"]`),
-  which will also exclude any submodules, or as regex patterns prefixed with `'re:'`
-  (e.g., `["re:package\\.utils\\..*"]`). Regex patterns are matched against the full
+  Note that `{"heading_level": 1}` is set by default, since it is a very useful
+  default... but can be overridden if you don't want the module path to be the
+  `h1` heading for the page.
+
+- **`exclude`** (`list[str]`) - List of module paths or patterns to exclude. Can
+  be specified as exact module paths (e.g., `["package.module"]`), which will
+  also exclude any submodules, or as regex patterns prefixed with `'re:'` (e.g.,
+  `["re:package\\.utils\\..*"]`). Regex patterns are matched against the full
   module path.
-- **`nav_section_title`** (`str`) - Title for the API reference section as it appears in
-  the navigation. Default is "API Reference"
-- **`api_root_uri`** (`str`) - Root folder for api docs in the generated site. This
-  determines the url path for the API documentation. Default is "reference"
+- **`nav_section_title`** (`str`) - Title for the API reference section as it
+  appears in the navigation. Default is "API Reference"
+- **`api_root_uri`** (`str`) - Root folder for api docs in the generated site.
+  This determines the url path for the API documentation. Default is "reference"
 - **`nav_item_prefix`** (`str`) - A prefix to add to each module name in the
-  navigation.  By default, renders a `[mod]` badge before each module.
-  Set to the empty string to disable this.
-- **`exclude_private`** (`bool`) - Exclude modules that start with an underscore
+  navigation.  By default, renders a `[mod]` badge before each module. Set to
+  the empty string to disable this.
+- **`exclude_private`** (`bool`) - Exclude modules that start with an
+  underscore.  `True` by default.
+- **`show_full_namespace`** (`bool`) - Show the full namespace in the navigation
+  title (as opposed to just the leaf module name). `False` by default (to avoid
+  clipping of long, nested module names).  The full module path is still shown
+  as the header of each page.
 - **`on_implicit_namespace_package`** (`str`) - What to do when an [implicit
   namespace package](https://peps.python.org/pep-0420/) is found. An "implicit
   namespace package" is a directory that contains python files, but no
@@ -161,6 +176,36 @@ plugins:
             show_symbol_type_toc: true
             summary: true
 ```
+
+If you *only* want these settings to apply to api modules, then you can use a special
+regex of `".*"` in the api-autonav `module_options` config, for example:
+
+```yaml
+  - api-autonav:
+      module_options:
+        ".*":
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
+          heading_level: 1
+```
+
+## Mkdocs-material suggestions
+
+When working with mkdocs-material, use [`theme.features:
+['navigation.indexes']`](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#section-index-pages)
+allow the module docs itself to be toggleable (rather than duplicated just
+inside the section):
+
+```yaml
+theme:
+  name: material
+  features:
+    - navigation.indexes
+```
+
+| with `navigation.indexes` | without |
+|---|---|
+| <img width="400" height="300" alt="with" src="https://github.com/user-attachments/assets/0dee4e45-5419-41b2-a015-a3358d0f3147" /> | <img width="400" height="300" alt="without" src="https://github.com/user-attachments/assets/063439e1-fcc7-44ec-9559-91cf643b9314" /> |
 
 ## Why this plugin?
 
