@@ -9,7 +9,8 @@ import yaml
 from mkdocs.exceptions import Abort
 from pytest import MonkeyPatch
 
-from mkdocs_api_autonav.plugin import PluginConfig, _iter_modules
+from mkdocs_api_autonav.plugin import PluginConfig
+from mkdocs_api_autonav.discovery import PythonDiscovery
 
 if TYPE_CHECKING:
     from _pytest.logging import LogCaptureFixture
@@ -90,9 +91,12 @@ def test_sorting(repo1: Path) -> None:
     package = repo1 / "src" / "my_library"
     (package / "z_submod.py").touch()
     (package / "a_submod.py").touch()
+    
+    # Use PythonDiscovery instead of the old _iter_modules function
+    discovery = PythonDiscovery(exclude_private=False, on_implicit_namespace_package="skip")
     modules = [
         x
-        for x, *_ in _iter_modules(repo1 / "src" / "my_library", str(repo1), "skip")
+        for x, *_ in discovery.discover(repo1 / "src" / "my_library", str(repo1))
         if not any(part.startswith("_") for part in x)
     ]
     assert modules == [

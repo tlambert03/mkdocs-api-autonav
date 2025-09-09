@@ -17,8 +17,10 @@ from mkdocs.structure.files import File, Files
 from mkdocs.structure.nav import Section
 from mkdocs.structure.pages import Page
 
+from .discovery import create_discovery_strategy
+
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Sequence
 
     from mkdocs.config.config_options import Plugins
     from mkdocs.config.defaults import MkDocsConfig
@@ -34,6 +36,21 @@ PLUGIN_NAME = "api-autonav"  # must match [project.entry-points."mkdocs.plugins"
 MOD_SYMBOL = '<code class="doc-symbol doc-symbol-nav doc-symbol-module"></code>'
 
 logger = get_plugin_logger(PLUGIN_NAME)
+
+
+class SourceConfig(Config):  # type: ignore [no-untyped-call]
+    """Configuration for a single source directory."""
+
+    path = opt.Type(str)
+    """Path to the source directory to document."""
+    discovery = opt.Choice(choices=["python", "c", "auto"], default="auto")
+    """Discovery strategy to use for this source."""
+    options = opt.Type(dict, default={})
+    """Options specific to the discovery strategy."""
+    module_options = opt.Type(dict, default={})
+    """Options for mkdocstrings handlers."""
+    exclude = opt.ListOfItems[str](opt.Type(str), default=[])
+    """List of patterns to exclude for this source."""
 
 
 class PluginConfig(Config):  # type: ignore [no-untyped-call]
@@ -59,6 +76,10 @@ class PluginConfig(Config):  # type: ignore [no-untyped-call]
         default="warn", choices=["raise", "warn", "skip"]
     )
     """What to do when encountering an implicit namespace package."""
+
+    # NEW: Flexible source configuration
+    sources = opt.ListOfItems(opt.SubConfig(SourceConfig), default=[])
+    """List of source configurations for different languages and directories."""
 
 
 class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
@@ -135,74 +156,88 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         return md
 
     def on_files(self, files: Files, /, *, config: MkDocsConfig) -> None:
-        """Called after the files collection is populated from the `docs_dir`.
+        """Called after the files collection is populated from the `docs_dir`."""
+        # Build unified source list from both old and new config
+        sources = self._build_sources_list()
 
-        Here we generate the virtual files that will be used to render the API
-        (each )
-        """
-        exclude_private = self.config.exclude_private
-        exclude_patterns: list[re.Pattern] = []
-        exclude_paths: list[str] = []
+        for source_config in sources:
+            # Create appropriate discovery strategy
+            try:
+                strategy = create_discovery_strategy(
+                    source_config["discovery"], source_config["options"]
+                )
+            except ValueError as e:
+                logger.error("Failed to create discovery strategy: %s", e)
+                continue
+            except ImportError as e:
+                if source_config["discovery"] == "c":
+                    logger.error(
+                        "C discovery requires mkdocstrings-c to be installed. "
+                        "Install it with: pip install mkdocstrings-c"
+                    )
+                else:
+                    logger.error("Import error for discovery strategy: %s", e)
+                continue
 
-        # Preprocess exclude patterns
-        for pattern in self.config.exclude:
-            if pattern.startswith("re:"):
-                # Regex pattern
-                try:
-                    exclude_patterns.append(re.compile(pattern[3:]))
-                except re.error:  # pragma: no cover
-                    logger.error("Invalid regex pattern: %s", pattern[3:])
-            else:
-                # Direct module path
-                exclude_paths.append(pattern)
+            # Process exclusions (both global and per-source)
+            exclude_patterns, exclude_paths = self._process_exclusions(
+                self.config.exclude + source_config["exclude"]
+            )
 
-        # for each top-level module specified in plugins.api-autonav.modules
-        for module in self.config.modules:
-            # iterate (recursively) over all modules in the package
-            for name_parts, docs_path in _iter_modules(
-                module,
-                self.config.api_root_uri,
-                self.config.on_implicit_namespace_package,  # type: ignore [arg-type]
-            ):
-                # parts looks like -> ('top_module', 'sub', 'sub_sub')
-                # docs_path looks like -> api_root_uri/top_module/sub/sub_sub/index.md
-                #   and refers to the location in the BUILT site directory
+            # Discover and document files
+            try:
+                for name_parts, docs_path in strategy.discover(
+                    Path(source_config["path"]), self.config.api_root_uri
+                ):
+                    # Check exclusions
+                    if self._should_exclude(
+                        name_parts, exclude_patterns, exclude_paths, source_config
+                    ):
+                        logger.info(
+                            "Excluding %r due to config.exclude", ".".join(name_parts)
+                        )
+                        continue
 
-                # Check exclusion conditions
-                if exclude_private and any(part.startswith("_") for part in name_parts):
-                    continue
+                    # Generate content
+                    full_path = self._resolve_full_path(
+                        source_config["path"], name_parts
+                    )
+                    content = strategy.make_content(
+                        name_parts, full_path, source_config["module_options"]
+                    )
 
-                # Check direct path exclusions
-                mod_path = ".".join(name_parts)
-                if any(mod_path == x or mod_path.startswith(x) for x in exclude_paths):
-                    logger.info("Excluding   %r due to config.exclude", mod_path)
-                    continue
+                    # Create virtual file
+                    logger.info(
+                        "Documenting %r in virtual file: %s",
+                        ".".join(name_parts),
+                        docs_path,
+                    )
+                    file = File.generated(config, src_uri=docs_path, content=content)
+                    if file.src_uri in files.src_uris:
+                        files.remove(file)
+                    files.append(file)
 
-                # Check regex exclusions
-                if any(pattern.search(mod_path) for pattern in exclude_patterns):
-                    logger.info("Excluding   %r due to config.exclude", mod_path)
-                    continue
+                    if self._uses_awesome_nav and docs_path.endswith("index.md"):
+                        # https://lukasgeiter.github.io/mkdocs-awesome-nav/features/titles/
+                        nav_path = docs_path.replace("index.md", ".nav.yml")
+                        title_content = f"title: {
+                            strategy.get_display_title(
+                                name_parts, self.config.show_full_namespace
+                            )
+                        }\n"
+                        nav_yml = File.generated(
+                            config, src_uri=nav_path, content=title_content
+                        )
+                        files.append(nav_yml)
 
-                # create the actual markdown that will go into the virtual file
-                content = self._module_markdown(name_parts)
+                    # Update navigation
+                    self.nav.add_path(name_parts, docs_path, file=file)
+            except Exception as e:
+                logger.error(
+                    "Error during discovery for %s: %s", source_config["path"], e
+                )
+                continue
 
-                # generate a mkdocs File object and add it to the collection
-                logger.info("Documenting %r in virtual file: %s", mod_path, docs_path)
-                file = File.generated(config, src_uri=docs_path, content=content)
-                if file.src_uri in files.src_uris:  # pragma: no cover
-                    files.remove(file)
-                files.append(file)
-                if self._uses_awesome_nav and docs_path.endswith("index.md"):
-                    # https://lukasgeiter.github.io/mkdocs-awesome-nav/features/titles/
-                    nav_path = docs_path.replace("index.md", ".nav.yml")
-                    content = f"title: {self._display_title(name_parts)}\n"
-                    nav_yml = File.generated(config, src_uri=nav_path, content=content)
-                    files.append(nav_yml)
-
-                # update our navigation tree
-                self.nav.add_path(name_parts, docs_path, file=file)
-
-        # TODO: it's probably better to do this in the on_nav method
         # Render the navigation tree to dict and add to config['nav']
         if cfg_nav := config.nav:
             _merge_nav(
@@ -211,8 +246,6 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 self.nav.as_dict(),
                 self.config.api_root_uri,
             )
-        # note, if there is NO existing nav, then mkdocs will
-        # find the pages and include them in the nav automatically
 
     def on_nav(
         self, nav: Navigation, /, *, config: MkDocsConfig, files: Files
@@ -230,6 +263,93 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                     item.title = self.config.nav_section_title
                     break
         return nav
+
+    def _build_sources_list(self) -> list[dict]:
+        """Combine legacy 'modules' config with new 'sources' config."""
+        sources = []
+
+        # Convert legacy modules to source configs
+        for module_path in self.config.modules:
+            sources.append(
+                {
+                    "path": str(module_path),
+                    "discovery": "python",  # Legacy modules are always Python
+                    "options": {
+                        "exclude_private": self.config.exclude_private,
+                        "on_implicit_namespace_package": (
+                            self.config.on_implicit_namespace_package
+                        ),
+                    },
+                    "module_options": self.config.module_options,
+                    "exclude": [],  # Use global exclude for legacy
+                }
+            )
+
+        # Add new sources
+        for source in self.config.sources:
+            sources.append(
+                {
+                    "path": source.path,
+                    "discovery": source.discovery,
+                    "options": source.options,
+                    "module_options": source.module_options,
+                    "exclude": source.exclude,
+                }
+            )
+
+        return sources
+
+    def _process_exclusions(
+        self, exclude_list: list[str]
+    ) -> tuple[list[re.Pattern], list[str]]:
+        """Process exclusion patterns."""
+        exclude_patterns = []
+        exclude_paths = []
+
+        for pattern in exclude_list:
+            if pattern.startswith("re:"):
+                try:
+                    exclude_patterns.append(re.compile(pattern[3:]))
+                except re.error:
+                    logger.error("Invalid regex pattern: %s", pattern[3:])
+            else:
+                exclude_paths.append(pattern)
+
+        return exclude_patterns, exclude_paths
+
+    def _should_exclude(
+        self,
+        name_parts: tuple[str, ...],
+        exclude_patterns: list[re.Pattern],
+        exclude_paths: list[str],
+        source_config: dict,
+    ) -> bool:
+        """Check if a path should be excluded."""
+        path_str = ".".join(name_parts)
+
+        # Check private exclusion for Python
+        if (
+            source_config["discovery"] == "python"
+            and source_config["options"].get("exclude_private", True)
+            and any(part.startswith("_") for part in name_parts)
+        ):
+            return True
+
+        # Check direct path exclusions
+        if any(path_str == x or path_str.startswith(x + ".") for x in exclude_paths):
+            return True
+
+        # Check regex exclusions
+        if any(pattern.search(path_str) for pattern in exclude_patterns):
+            return True
+
+        return False
+
+    def _resolve_full_path(self, source_path: str, name_parts: tuple[str, ...]) -> Path:
+        """Resolve the full path to the source file."""
+        # This is a simple implementation - in practice, the discovery strategy
+        # handles the actual file resolution
+        return Path(source_path) / Path(*name_parts)
 
     def _display_title(self, parts: Sequence[str]) -> str:
         if self.config.show_full_namespace:
@@ -268,89 +388,6 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
 
 
 # -----------------------------------------------------------------------------
-
-
-def _iter_modules(
-    root_module: Path | str,
-    docs_root: str,
-    on_implicit_namespace_package: WarnRaiseSkip,
-) -> Iterator[tuple[tuple[str, ...], str]]:
-    """Recursively collect all modules starting at `module_path`.
-
-    Yields a tuple of parts (e.g. ('top_module', 'sub', 'sub_sub')) and the
-    path where the corresponding documentation file should be written.
-    """
-    root_module = Path(root_module)
-    for abs_path in sorted(_iter_py_files(root_module, on_implicit_namespace_package)):
-        rel_path = abs_path.relative_to(root_module.parent)
-        doc_path = rel_path.with_suffix(".md")
-        full_doc_path = Path(docs_root, doc_path)
-        parts = tuple(rel_path.with_suffix("").parts)
-
-        if parts[-1] == "__init__":
-            parts = parts[:-1]
-            doc_path = doc_path.with_name("index.md")
-            full_doc_path = full_doc_path.with_name("index.md")
-        if parts[-1] == "index":
-            # deal with the special case of a module named 'index.py'
-            # we don't want to name it index.md, since that is a special
-            # name for a directory index
-            full_doc_path = full_doc_path.with_name("index_py.md")
-
-        yield parts, str(full_doc_path)
-
-
-def _iter_py_files(
-    root_module: str | Path, on_implicit_namespace_package: WarnRaiseSkip
-) -> Iterator[Path]:
-    """Recursively collect all modules starting at `root_module`.
-
-    Recursively walks from a given root folder, yielding .py files.  Allows special
-    handling of implicit namespace packages.
-    """
-    root_path = Path(root_module)
-
-    # Skip this directory entirely if it isn't an explicit package.
-    if _is_implicit_namespace_package(root_path):
-        if on_implicit_namespace_package == "raise":
-            raise RuntimeError(
-                f"Implicit namespace package (without an __init__.py file) detected at "
-                f"{root_path}.\nThis will likely cause a collection error in "
-                "mkdocstrings.  Set 'on_implicit_namespace_package' to 'skip' to omit "
-                "this package from the documentation, or 'warn' to include it anyway "
-                "but log a warning."
-            )
-        else:
-            if on_implicit_namespace_package == "skip":
-                logger.info(
-                    "Skipping implicit namespace package (without an __init__.py file) "
-                    "at %s",
-                    root_path,
-                )
-            else:  # on_implicit_namespace_package == "warn":
-                logger.warning(
-                    "Skipping implicit namespace package (without an __init__.py file) "
-                    "at %s. Set 'on_implicit_namespace_package' to 'skip' to omit it "
-                    "without warning.",
-                    root_path,
-                )
-            return
-
-    # Yield .py files in the current directory.
-    for item in root_path.iterdir():
-        if item.is_file() and item.suffix == ".py":
-            yield item
-        elif item.is_dir():
-            yield from _iter_py_files(item, on_implicit_namespace_package)
-
-
-def _is_implicit_namespace_package(path: Path) -> bool:
-    """Return True if the given path is an implicit namespace package.
-
-    An implicit namespace package is a directory that does not contain an
-    __init__.py file, but *does* have python files in it.
-    """
-    return not (path / "__init__.py").is_file() and any(path.glob("*.py"))
 
 
 def _merge_nav(

@@ -1,0 +1,25 @@
+site_name: C Project Test
+site_description: Test project for C documentation
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        c:
+          # C-specific options would go here
+  - api-autonav:
+      sources:
+        - path: 'src/arv'
+          discovery: c
+          options:
+            group_by_basename: true
+            include_headers: true
+            include_source: true
+          module_options:
+            handler: c
+
+nav:
+  - Home: index.md
+  - API Reference
+
+theme:
+  name: material

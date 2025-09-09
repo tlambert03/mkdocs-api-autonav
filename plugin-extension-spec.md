@@ -20,7 +20,41 @@ The plugin currently:
 3. **Clean abstraction** - Extensible pattern for future language support
 4. **Flexible configuration** - Allow mixed language projects (Python + C in same docs)
 
-## Implementation Strategy
+## Possible other languages we want to support
+
+- shell (with mkdocstrings-shell)
+
+    ```yaml
+    plugins:
+    - mkdocstrings:
+        default_handler: shell  # optional
+    ```
+
+    then in markdown:
+
+    ```markdown
+    ::: relative/path/to/script
+        handler: shell
+    ```
+
+- typescript/javascript (with mkdocstrings-typescript)
+
+    ```txt
+    📁 ./
+    ├── 📁 src/
+    │   └── 📁 package1/
+    ├──  typedoc.base.json
+    └──  typedoc.json
+    ```
+
+    then, in markdown:
+
+    ```markdown
+    ::: @owner/packageName
+        handler: typescript
+    ```
+
+## Implementation Strategy (partial?)
 
 ### 1. Create Discovery Strategy Abstraction
 
