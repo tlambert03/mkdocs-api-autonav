@@ -232,6 +232,10 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
 
                     # Update navigation
                     self.nav.add_path(name_parts, docs_path, file=file)
+            except RuntimeError:
+                # Re-raise RuntimeError (e.g., from implicit namespace package
+                # with "raise" mode)
+                raise
             except Exception as e:
                 logger.error(
                     "Error during discovery for %s: %s", source_config["path"], e
