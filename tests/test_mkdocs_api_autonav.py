@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import yaml
@@ -33,7 +33,7 @@ def _build_command(config_file: str) -> None:
         cfg.plugins.on_shutdown()
 
 
-def cfg_dict(strict: bool = False) -> dict:
+def cfg_dict(strict: bool = False, **kwargs: Any) -> dict:
     return {
         "site_name": "My Library",
         "strict": strict,
@@ -44,6 +44,7 @@ def cfg_dict(strict: bool = False) -> dict:
                 "api-autonav": {
                     "modules": ["src/my_library"],
                     "exclude": ["my_library.exclude_me"],
+                    **kwargs,
                 }
             },
         ],
@@ -125,6 +126,7 @@ def test_build_without_mkdocstrings(repo1: Path, caplog: LogCaptureFixture) -> N
 
 
 NAV_CASES: list[tuple[bool, dict]] = [
+    (True, {}),
     (True, {"nav": ["index.md"]}),
     (True, {"nav": [{"Home": "index.md"}]}),
     (True, {"nav": ["index.md", NAV_SECTION]}),
@@ -134,20 +136,31 @@ NAV_CASES: list[tuple[bool, dict]] = [
 ]
 
 
+@pytest.mark.parametrize("show_full_namespace", [True, False])
 @pytest.mark.parametrize("strict, nav", NAV_CASES)
 def test_build_with_nav(
-    repo1: Path, strict: bool, nav: dict, caplog: LogCaptureFixture
+    repo1: Path,
+    strict: bool,
+    nav: dict,
+    show_full_namespace: bool,
+    caplog: LogCaptureFixture,
 ) -> None:
-    cfg_with_nav = {**cfg_dict(strict=strict), **nav}
+    cfg_with_nav = {
+        **cfg_dict(strict=strict, show_full_namespace=show_full_namespace),
+        **nav,
+    }
     mkdocs_yml = repo1 / "mkdocs.yml"
     mkdocs_yml.write_text(yaml.safe_dump(cfg_with_nav))
     _build_command(str(mkdocs_yml))
 
-    expect_message = bool(
-        isinstance(nav_dict := nav["nav"][-1], dict)
-        and (nav_sec := nav_dict.get(NAV_SECTION))
-        and nav_sec != API_URI
-    )
+    if nav_list := nav.get("nav"):
+        expect_message = bool(
+            isinstance(nav_dict := nav_list[-1], dict)
+            and (nav_sec := nav_dict.get(NAV_SECTION))
+            and nav_sec != API_URI
+        )
+    else:
+        expect_message = False
     assert bool(caplog.messages) == expect_message
 
     assert (ref := repo1 / "site" / "reference").is_dir()

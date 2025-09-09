@@ -1,0 +1,16 @@
+site_name: My Library
+strict: True
+
+
+theme:
+  name: material
+  features:
+    - navigation.expand
+    - navigation.indexes
+
+plugins:
+  - search
+  - api-autonav:
+      modules: [src/my_library]
+      exclude: ["my_library.exclude_me"]
+  - mkdocstrings:
