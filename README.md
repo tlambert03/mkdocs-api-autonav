@@ -22,10 +22,10 @@ pip install mkdocs-api-autonav
 site_name: "My Library"
 
 plugins:
-- search
-- mkdocstrings:
-- api-autonav:
-    modules: ['src/my_library']
+  - search
+  - mkdocstrings
+  - api-autonav:
+      modules: ['src/my_library']
 ```
 
 > [!IMPORTANT]
@@ -37,18 +37,18 @@ Here are all the configurables, along with their default values.
 
 ```yaml
 plugins:
-- api-autonav:
-    modules: []
-    module_options: {}
-    nav_section_title: "API Reference"
-    api_root_uri: "reference"
-    nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
-    exclude_private: true
-    show_full_namespace: false
-    on_implicit_namespace_package: "warn"
+  - api-autonav:
+      modules: []
+      module_options: {}
+      nav_section_title: "API Reference"
+      api_root_uri: "reference"
+      nav_item_prefix: "<code class='doc-symbol doc-symbol-nav doc-symbol-module'></code>"
+      exclude_private: true
+      show_full_namespace: false
+      on_implicit_namespace_package: "warn"
 ```
 
-- **`modules`** (`list[str]`)- List of paths to Python modules to include in the
+- **`modules`** (`list[str]`) - List of paths to Python modules to include in the
   navigation, relative to the project root.  This is the only required
   configuration. (e.g., `["src/package"]`)
 - **`module_options`** (`dict[str, dict]`) - Dictionary of local options to pass
@@ -60,15 +60,16 @@ plugins:
   `.*` regex pattern (or add it to your global mkdocstrings config)
 
   ```yaml
-  - api-autonav:
-      modules: ['src/package']
-      module_options:
-        package.submodule:
-          docstring_style: google
-          show_signature: false
-        ".*":
-          heading_level: 1
-          show_symbol_type_heading: true
+  plugins:
+    - api-autonav:
+        modules: ['src/package']
+        module_options:
+          package.submodule:
+            docstring_style: google
+            show_signature: false
+          ".*":
+            heading_level: 1
+            show_symbol_type_heading: true
   ```
 
   Note that `{"heading_level": 1}` is set by default, since it is a very useful
@@ -181,6 +182,7 @@ If you *only* want these settings to apply to api modules, then you can use a sp
 regex of `".*"` in the api-autonav `module_options` config, for example:
 
 ```yaml
+plugins:
   - api-autonav:
       module_options:
         ".*":
@@ -192,7 +194,7 @@ regex of `".*"` in the api-autonav `module_options` config, for example:
 ## Mkdocs-material suggestions
 
 When working with mkdocs-material, use [`theme.features:
-['navigation.indexes']`](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#section-index-pages)
+['navigation.indexes']`](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#section-index-pages) to
 allow the module docs itself to be toggleable (rather than duplicated just
 inside the section):
 
@@ -215,10 +217,10 @@ documentation for my projects.
 - [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings) with
   [mkdocstrings-python](https://github.com/mkdocstrings/python) - to generate
   the API documentation using mkdocstrings `::: <identifier>` directives.
-- [mkdocs-gen-files]() - Along with a script to look through my `src` folder to
+- [mkdocs-gen-files](https://github.com/oprypin/mkdocs-gen-files) - Along with a script to look through my `src` folder to
   generate virtual files (including just the mkdocstrings directives) for each
   (sub-)module in the project.
-- [literate-nav]() - To consume a virtual `SUMMARY.md` file generated using
+- [literate-nav](https://github.com/oprypin/mkdocs-literate-nav) - To consume a virtual `SUMMARY.md` file generated using
   `mkdocs-gen-files` in the previous step, and generate a navigation structure that
   mirrors the module structure.
 
