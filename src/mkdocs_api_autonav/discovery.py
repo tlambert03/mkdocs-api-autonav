@@ -42,10 +42,14 @@ class FileDiscoveryStrategy(Protocol):
         """
         Generate markdown content for the discovered file.
 
-        Args:
-            parts: Name parts for the file (e.g., ('foo', 'bar') for foo/bar.c)
-            full_path: Full path to the actual source file
-            options: Module-specific options from config
+        Parameters
+        ----------
+        parts : tuple[str, ...]
+            Name parts for the file (e.g., ('foo', 'bar') for foo/bar.c)
+        full_path : Path
+            Full path to the actual source file
+        options : dict
+            Module-specific options from config
 
         Returns
         -------
@@ -67,7 +71,13 @@ class PythonDiscovery:
         on_implicit_namespace_package: WarnRaiseSkip = "warn",
     ):
         self.exclude_private = exclude_private
-        self.on_implicit_namespace_package = on_implicit_namespace_package
+        if on_implicit_namespace_package not in ("warn", "raise", "skip"):
+            raise ValueError(
+                "on_implicit_namespace_package must be one of 'warn', 'raise' or 'skip'"
+            )
+        self.on_implicit_namespace_package: WarnRaiseSkip = (
+            on_implicit_namespace_package
+        )
 
     def discover(
         self, root: Path, docs_root: str
@@ -98,9 +108,8 @@ class PythonDiscovery:
     ) -> str:
         """Generate Python mkdocstrings content."""
         mod_identifier = ".".join(parts)  # top_module.sub.sub_sub
-        content_options = {
-            "heading_level": 1
-        }  # very useful default... but can be overridden
+        # very useful default... but can be overridden
+        content_options = {"heading_level": 1}
 
         for option in options:
             if re.match(option, mod_identifier):
@@ -189,11 +198,19 @@ class CDiscovery:
     ):
         """Configure C discovery strategy.
 
-        Args:
-            include_headers: Include .h/.hpp files
-            include_source: Include .c/.cpp files
-            group_by_basename: Group foo.c and foo.h as single doc page
-            file_extensions: Override default extensions
+        Parameters
+        ----------
+        include_headers : bool, optional
+            Include header files (.h, .hpp, etc.), by default True
+        include_source : bool, optional
+            Include source files (.c, .cpp, etc.), by default True
+        group_by_basename : bool, optional
+            Group files with the same basename (e.g., foo.c and foo.h) into a
+            single documentation page, by default True
+        file_extensions : list[str] | None, optional
+            Override default extensions, by default None which uses
+            ['.c', '.cpp', '.cc', '.cxx'] for source and
+            ['.h', '.hpp', '.hh', '.hxx'] for headers
         """
         self.include_headers = include_headers
         self.include_source = include_source
@@ -259,53 +276,47 @@ class CDiscovery:
         For grouped files (foo.c + foo.h), include both.
         """
         handler = options.get("handler", "c")
+        basename = parts[-1] if parts else ""
 
-        # For C discovery, we need to find the actual source files
-        # that correspond to this parts tuple
-        root = full_path.parent
+        # Determine title and file paths based on grouping mode
         if self.group_by_basename:
             # Find all files with the same basename
-            basename = parts[-1]
-            base_dir = root
-            if len(parts) > 1:
-                base_dir = root / Path(*parts[:-1])
+            root = full_path.parent
+            base_dir = root if len(parts) <= 1 else root / Path(*parts[:-1])
 
-            # Find matching files
-            matching_files = []
+            file_paths = []
             if base_dir.exists():
                 for ext in self.file_extensions:
                     candidate = base_dir / f"{basename}{ext}"
                     if candidate.exists():
-                        matching_files.append(candidate)
+                        file_paths.append(candidate)
 
-            # Generate content for all matching files
-            content_parts = [
-                f"""---
-title: {parts[-1]}
----
-
-# {".".join(parts)}
-"""
-            ]
-
-            for file_path in sorted(matching_files):
-                content_parts.append(f"""
-::: {file_path}
-    handler: {handler}
-""")
-
-            return "\n".join(content_parts)
+            title = basename
+            heading = ".".join(parts)
         else:
             # Single file
-            return f"""---
-title: {parts[-1]}
----
+            file_paths = [full_path]
+            title = basename
+            heading = "/".join(parts)
 
-# {"/".join(parts)}
+        # Generate content using common template
+        header = dedent(f"""
+        ---
+        title: {title}
+        ---
 
-::: {full_path}
-    handler: {handler}
-"""
+        # {heading}
+        """).strip()
+
+        blocks = [header]
+        for file_path in sorted(file_paths):
+            block = dedent(f"""
+            ::: {file_path!s}
+                handler: {handler}
+            """).strip()
+            blocks.append(block)
+
+        return "\n\n".join(blocks) + ("\n" if not self.group_by_basename else "")
 
     def get_display_title(self, parts: tuple[str, ...], show_full: bool) -> str:
         """Get the display title for navigation."""
