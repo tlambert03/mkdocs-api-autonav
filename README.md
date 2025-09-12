@@ -225,9 +225,9 @@ documentation for my projects.
   mirrors the module structure.
 
 > [!NOTE]
-> This pattern was mostly borrowed/inspired by the documentation for
-> [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings/blob/main/scripts/gen_ref_nav.py)
-> itself, created by [@pawamoy](https://github.com/pawamoy)
+> This pattern was mostly borrowed/inspired by the 
+> [`gen_ref_nav.py` example in mkdocstrings](https://github.com/mkdocstrings/mkdocstrings/blob/6ef141222d0b5ad47ced9049472243cf5887ec0e/scripts/gen_ref_nav.py),
+> created by [@pawamoy](https://github.com/pawamoy)
 
 This requires copying the same script and configuring three different plugins.
 All I *really* want to do is point to the top level module(s) in my project
