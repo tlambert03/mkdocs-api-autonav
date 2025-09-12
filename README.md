@@ -243,3 +243,11 @@ It doesn't currently leave a ton of room for configuration, so it's mostly
 designed for those who want to document their *entire* public API.  (I find
 it can actually be a useful way to remind myself of what I've actually
 exposed and omitted from the public API).
+
+## Alternatives
+
+Here are some other plugins that support automatic generation of API docs (and
+why I ultimately decided not to use them.)
+
+- [**mkapi**](https://github.com/daizutabi/mkapi) - based on [astdoc](https://github.com/daizutabi/astdoc) instead of [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings)... (and I wanted to stay within the mkdocstrings ecosystem)
+- [**mkdocs-autoapi**](https://github.com/jcayers20/mkdocs-autoapi) - also uses mkdocstrings (like this plugin), but vendors two other plugins ([mkdocs-gen-files](https://github.com/oprypin/mkdocs-gen-files) and [literate-nav](https://github.com/oprypin/mkdocs-literate-nav)) so as to support the [original pattern from @pawamoy's recipe](https://github.com/mkdocstrings/mkdocstrings/blob/6ef141222d0b5ad47ced9049472243cf5887ec0e/scripts/gen_ref_nav.py), made unnecessary by [newer mkdocs APIs](https://www.mkdocs.org/dev-guide/api/#mkdocs.structure.files.File.generated) 
