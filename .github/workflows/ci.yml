@@ -29,10 +29,10 @@ jobs:
         resolution: ["highest", "lowest-direct"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
-          - python-version: "3.9"
+          - python-version: "3.10"
             resolution: "highest"
             os: macos-latest
-          - python-version: "3.9"
+          - python-version: "3.10"
             resolution: "highest"
             os: windows-latest
     steps:
