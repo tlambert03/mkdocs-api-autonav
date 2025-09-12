@@ -221,7 +221,7 @@ class CDiscovery:
             - foo.h -> docs_root/foo_h.md
         """
         # Find all relevant files
-        all_files = []
+        all_files: list[Path] = []
         for ext in self.file_extensions:
             all_files.extend(root.rglob(f"*{ext}"))
 
@@ -315,7 +315,7 @@ title: {parts[-1]}
 
 
 # Registry of available discovery strategies
-DISCOVERY_STRATEGIES = {
+DISCOVERY_STRATEGIES: dict[str, type[FileDiscoveryStrategy]] = {
     "python": PythonDiscovery,
     "c": CDiscovery,
     # Future: 'rust': RustDiscovery, etc.
