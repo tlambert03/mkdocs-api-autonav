@@ -8,7 +8,7 @@ plugins:
           # C-specific options would go here
   - api-autonav:
       sources:
-        - path: 'src/arv'
+        - path: "src/arv"
           discovery: c
           options:
             group_by_basename: true
@@ -20,6 +20,3 @@ plugins:
 nav:
   - Home: index.md
   - API Reference
-
-theme:
-  name: material

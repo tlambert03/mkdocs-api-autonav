@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from mkdocs import config
 
 from mkdocs_api_autonav.discovery import CDiscovery
+from mkdocs_api_autonav.plugin import AutoAPIPlugin, PluginConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
 C_PROJECT = FIXTURES / "c_project"
@@ -55,7 +57,7 @@ def c_project(tmp_path: Path) -> Path:
     return project
 
 
-def test_c_discovery_grouped():
+def test_c_discovery_grouped() -> None:
     """Test C file discovery with grouping by basename."""
     discovery = CDiscovery(
         include_headers=True,
@@ -78,7 +80,7 @@ def test_c_discovery_grouped():
     assert discovered == expected
 
 
-def test_c_discovery_individual():
+def test_c_discovery_individual() -> None:
     """Test C file discovery without grouping."""
     discovery = CDiscovery(
         include_headers=True,
@@ -100,7 +102,7 @@ def test_c_discovery_individual():
     assert all(name in expected_files for name in discovered_names)
 
 
-def test_c_discovery_headers_only():
+def test_c_discovery_headers_only() -> None:
     """Test C file discovery with headers only."""
     discovery = CDiscovery(
         include_headers=True,
@@ -122,7 +124,7 @@ def test_c_discovery_headers_only():
     assert discovered == expected
 
 
-def test_c_make_content_grouped():
+def test_c_make_content_grouped() -> None:
     """Test C content generation for grouped files."""
     discovery = CDiscovery(group_by_basename=True)
 
@@ -143,7 +145,7 @@ def test_c_make_content_grouped():
     assert "handler: c" in content
 
 
-def test_c_make_content_individual():
+def test_c_make_content_individual() -> None:
     """Test C content generation for individual files."""
     discovery = CDiscovery(group_by_basename=False)
 
@@ -159,7 +161,7 @@ def test_c_make_content_individual():
     assert "handler: c" in content
 
 
-def test_c_display_title():
+def test_c_display_title() -> None:
     """Test C display title generation."""
     discovery = CDiscovery()
 
@@ -174,7 +176,7 @@ def test_c_display_title():
     assert title_short == "file"
 
 
-def test_c_custom_extensions():
+def test_c_custom_extensions() -> None:
     """Test C discovery with custom file extensions."""
     discovery = CDiscovery(
         include_headers=True,
@@ -197,16 +199,13 @@ def test_c_custom_extensions():
     assert discovered == expected
 
 
-@pytest.mark.skipif(not Path(C_PROJECT).exists(), reason="C project fixture not found")
-def test_build_c_project_integration(c_project: Path):
+def test_build_c_project_integration(c_project: Path) -> None:
     """Integration test: build C project documentation."""
     mkdocs_yml = c_project / "mkdocs.yml"
 
     # Note: This test will only work if mkdocstrings-c is installed
     # For now, we'll just test the configuration loading
     try:
-        from mkdocs import config
-
         cfg = config.load_config(str(mkdocs_yml))
 
         # Verify our plugin is loaded
@@ -219,13 +218,11 @@ def test_build_c_project_integration(c_project: Path):
         pytest.skip("MkDocs not available for integration testing")
 
 
-def test_backwards_compatibility_python():
+def test_backwards_compatibility_python() -> None:
     """Test that existing Python configurations still work."""
     # This should use the legacy modules configuration
 
     # Should not raise any validation errors
-
-    from mkdocs_api_autonav.plugin import AutoAPIPlugin, PluginConfig
 
     plugin_config = PluginConfig()
     plugin_config.load_dict(

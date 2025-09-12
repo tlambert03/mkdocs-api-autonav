@@ -220,11 +220,10 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                     if self._uses_awesome_nav and docs_path.endswith("index.md"):
                         # https://lukasgeiter.github.io/mkdocs-awesome-nav/features/titles/
                         nav_path = docs_path.replace("index.md", ".nav.yml")
-                        title_content = f"title: {
-                            strategy.get_display_title(
-                                name_parts, self.config.show_full_namespace
-                            )
-                        }\n"
+                        display_title = strategy.get_display_title(
+                            name_parts, self.config.show_full_namespace
+                        )
+                        title_content = f"title: {display_title}\n"
                         nav_yml = File.generated(
                             config, src_uri=nav_path, content=title_content
                         )
