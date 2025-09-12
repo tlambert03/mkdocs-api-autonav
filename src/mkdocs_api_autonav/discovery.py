@@ -257,7 +257,7 @@ class CDiscovery:
             # Yield one entry per group
             for parts, _file_paths in groups.items():
                 doc_path = Path(docs_root) / Path(*parts[:-1]) / f"{parts[-1]}.md"
-                yield parts, str(doc_path)
+                yield parts, doc_path.as_posix()
         else:
             # Individual files
             for file_path in sorted(all_files):
@@ -265,7 +265,7 @@ class CDiscovery:
                 # Create parts from the full path including extension
                 parts = (*rel_path.parent.parts, rel_path.name.replace(".", "_"))
                 doc_path = Path(docs_root) / Path(*parts[:-1]) / f"{parts[-1]}.md"
-                yield parts, str(doc_path)
+                yield parts, doc_path.as_posix()
 
     def make_content(
         self, parts: tuple[str, ...], full_path: Path, options: dict
