@@ -161,7 +161,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          import:
+          inventories:
             - https://docs.python.org/3/objects.inv
           options:
             docstring_section_style: list # or "table"
