@@ -266,3 +266,100 @@ def test_awesome_nav_compat(repo1: Path) -> None:
     assert (lib := ref / "my_library").is_dir()
     assert (lib / "index.html").is_file()
     assert (lib / "submod").is_dir()
+
+
+@pytest.mark.parametrize("theme", ["mkdocs", "material"])
+def test_nav_flattening_without_explicit_nav(repo1: Path, theme: str) -> None:
+    """Test that single-page sections are flattened in auto-generated nav.
+
+    This test verifies the fix for issue #32:
+    https://github.com/tlambert03/mkdocs-api-autonav/issues/32
+
+    When mkdocs.yml has no explicit nav, MkDocs auto-generates navigation
+    from file structure. For paths like reference/gamma/index.md, it creates
+    nested sections which render as href="#" in the default theme.
+
+    Our plugin should flatten sections that contain only a single page
+    (typically the __init__.py of a module) so they render as direct links.
+
+    Tests both default mkdocs theme and mkdocs-material to ensure
+    compatibility with both.
+    """
+    if theme == "material":
+        pytest.importorskip("material")
+
+    # Create a minimal config with NO nav (triggers auto-nav)
+    cfg = {
+        "site_name": "Test Docs",
+        "plugins": [
+            {"mkdocstrings": {}},
+            {"api-autonav": {"modules": ["src/my_library"]}},
+        ],
+    }
+
+    if theme == "material":
+        cfg["theme"] = {"name": "material"}
+
+    mkdocs_yml = repo1 / "mkdocs.yml"
+    mkdocs_yml.write_text(yaml.safe_dump(cfg))
+    _build_command(str(mkdocs_yml))
+
+    # Read the generated index.html to check nav structure
+    index_html = (repo1 / "site" / "index.html").read_text()
+
+    # The "my_library" module (which only has __init__.py at top level)
+    # should render as a direct link, not href="#"
+    # Check that we have a proper link to the module
+    assert 'href="reference/my_library/"' in index_html
+
+    # Verify that the module page was actually created
+    assert (repo1 / "site" / "reference" / "my_library" / "index.html").is_file()
+
+    # The submod (which also only has an __init__.py) should also be flattened
+    # when it appears in navigation, it should have a proper link
+    # Note: it may not appear at the top level if it's nested, so we just
+    # verify the file exists - the key test is that top-level modules work
+    assert (
+        repo1 / "site" / "reference" / "my_library" / "submod" / "index.html"
+    ).is_file()
+
+
+@pytest.mark.parametrize("theme", ["mkdocs", "material"])
+def test_nav_flattening_with_explicit_nav(repo1: Path, theme: str) -> None:
+    """Test that flattening doesn't break with explicit nav configuration.
+
+    This ensures that the flattening behavior is only applied when needed
+    (auto-generated nav) and doesn't interfere with explicit nav configs.
+
+    Tests both default mkdocs theme and mkdocs-material to ensure
+    compatibility with both.
+    """
+    if theme == "material":
+        pytest.importorskip("material")
+
+    # Create a config WITH explicit nav
+    cfg = {
+        "site_name": "Test Docs",
+        "nav": ["index.md", NAV_SECTION],
+        "plugins": [
+            {"mkdocstrings": {}},
+            {"api-autonav": {"modules": ["src/my_library"]}},
+        ],
+    }
+
+    if theme == "material":
+        cfg["theme"] = {"name": "material"}
+
+    mkdocs_yml = repo1 / "mkdocs.yml"
+    mkdocs_yml.write_text(yaml.safe_dump(cfg))
+    _build_command(str(mkdocs_yml))
+
+    # Read the generated index.html to check nav structure
+    index_html = (repo1 / "site" / "index.html").read_text()
+
+    # With explicit nav, our plugin directly generates the correct structure
+    # so this should also work fine
+    assert 'href="reference/my_library/"' in index_html
+
+    # Verify that the module page was actually created
+    assert (repo1 / "site" / "reference" / "my_library" / "index.html").is_file()

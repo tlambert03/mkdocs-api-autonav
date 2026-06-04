@@ -226,6 +226,7 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
                 if isinstance(item, Section) and item.title == "Reference":
                     # this is the section we created in on_files
                     # let's fix it up
+                    self._flatten_single_page_sections(item)
                     self._fix_nav_item(item)
                     item.title = self.config.nav_section_title
                     break
@@ -235,6 +236,58 @@ class AutoAPIPlugin(BasePlugin[PluginConfig]):  # type: ignore [no-untyped-call]
         if self.config.show_full_namespace:
             return ".".join(parts)
         return parts[-1]
+
+    def _flatten_single_page_sections(self, item: StructureItem) -> None:
+        """Flatten sections that contain only a single page.
+
+        This fixes the issue where mkdocs auto-nav creates nested dropdowns for
+        directory structures like reference/gamma/index.md, which results in
+        links with href="#" in the default theme.
+
+        Section(title='gamma')
+            Page(title='gamma', url='/reference/gamma/')
+
+        becomes:
+
+        Page(title='gamma', url='/reference/gamma/')
+        """
+        if isinstance(item, Section):
+            # First recursively flatten children
+            for child in list(item.children):
+                self._flatten_single_page_sections(child)
+
+            # Then check if this section should be flattened
+            if len(item.children) == 1 and isinstance(item.children[0], Page):
+                # This section contains only a single page
+                # Check if it's representing an index page for this section
+                page = item.children[0]
+                # If the page URL ends with the section name, it's likely an index
+                # e.g., section "gamma" contains page at "reference/gamma/"
+                if page.url and item.title.lower() in page.url.rstrip("/").split("/"):
+                    # Replace this section's children with the grandchildren
+                    # (none in this case) by marking it for removal from parent
+                    item._should_flatten = True  # type: ignore [attr-defined]
+                    item._flat_page = page  # type: ignore [attr-defined]
+
+        # If this section has children marked for flattening,
+        # replace them with their pages
+        if isinstance(item, Section):
+            new_children = []
+            for child in item.children:
+                if isinstance(child, Section) and getattr(
+                    child, "_should_flatten", False
+                ):
+                    # Replace the section with its single page
+                    page = child._flat_page
+                    # Set the page title to the section title with prefix
+                    # _fix_nav_item won't process pages at the top level of
+                    # a section correctly, so we need to set the title here
+                    page.title = f"{self.config.nav_item_prefix}{child.title.lower()}"
+                    page.meta["title"] = page.title
+                    new_children.append(page)
+                else:
+                    new_children.append(child)
+            item.children = new_children
 
     def _fix_nav_item(self, item: StructureItem) -> None:
         """Recursively fix titles of members in section.
