@@ -33,7 +33,7 @@ plugins:
 
 ### Configuration
 
-Here are all the configurables, along with their default values.
+Here are all the configuration options, along with their default values.
 
 ```yaml
 plugins:
