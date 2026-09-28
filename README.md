@@ -1,5 +1,13 @@
 # mkdocs-api-autonav
 
+> [!WARNING]
+> **This project is in maintenance mode.**
+> Material for MkDocs is [winding down in favor of Zensical](https://squidfunk.github.io/mkdocs-material/blog/2025/11/05/zensical/),
+> and [Zensical 0.0.66](https://github.com/zensical/zensical/releases/tag/v0.0.66) now
+> [supports this plugin's functionality natively](https://github.com/zensical/backlog/issues/7#issuecomment-5868334339).
+> I no longer plan to use MkDocs, so expect no new features here.
+> Consider [migrating to Zensical](https://zensical.org/compatibility/).
+
 [![License](https://img.shields.io/pypi/l/mkdocs-api-autonav.svg?color=green)](https://github.com/tlambert03/mkdocs-api-autonav/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/mkdocs-api-autonav.svg?color=green)](https://pypi.org/project/mkdocs-api-autonav)
 [![Python Version](https://img.shields.io/pypi/pyversions/mkdocs-api-autonav.svg?color=green)](https://python.org)
