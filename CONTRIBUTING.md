@@ -18,7 +18,7 @@ uv sync
 uv run pytest
 ```
 
-### Run local docs fitures
+### Run local docs fixtures
 
 ```sh
 uv run --group docs mkdocs serve -f tests/fixtures/repo1/mkdocs.yml
